@@ -1,7 +1,13 @@
 from fastapi import FastAPI
 import uvicorn
 
-from api.routes.images import missing_data, visualization, outliers, dim_reduction
+from api.routes.images import (
+    missing_data,
+    visualization,
+    outliers,
+    dim_reduction,
+    noise,
+)
 
 
 tags_metadata = [
@@ -11,15 +17,19 @@ tags_metadata = [
     },
     {
         "name": "Images Visualization",
-        "description": "Operations related to visualizing images.",
+        "description": "Operations related to generic image visualization.",
     },
     {
         "name": "Images Outliers",
-        "description": "Operations related to detecting outliers in images.",
+        "description": "Operations related to detecting and visualizingoutliers in images.",
     },
     {
         "name": "Images Dimensionality Reduction",
         "description": "Operations related to dimensionality reduction in images.",
+    },
+    {
+        "name": "Images Noise Removal",
+        "description": "Operations related to noise removal in images.",
     },
 ]
 
@@ -29,6 +39,7 @@ app.include_router(missing_data.router)
 app.include_router(visualization.router)
 app.include_router(outliers.router)
 app.include_router(dim_reduction.router)
+app.include_router(noise.router)
 
 
 def main():

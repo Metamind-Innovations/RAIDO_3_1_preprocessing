@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import List, Tuple, Any
 
-import numpy as np
 from pydantic import BaseModel
 
 
@@ -56,3 +55,8 @@ class OutlierPixels(BaseModel):
             "examples": [{"outlier_coordinates": [(10, 20), (30, 40)]}]
         }
     }
+
+
+class DenoiseMode(str, Enum):
+    fast = "fast"
+    slow = "slow"

@@ -40,7 +40,7 @@ def pca_single_image(
         reconstructed_channel = pca.inverse_transform(pca_channel)
 
         # Get explained variance ratio for this channel (if it is a color channel)
-        if i <= 2:  
+        if i <= 2:
             explained_variance_ratio = pca.explained_variance_ratio_
             cumulative_variance_ratio = np.cumsum(explained_variance_ratio)
             total_variance_explained = cumulative_variance_ratio[-1]
@@ -70,7 +70,9 @@ def pca_multiple_images(
     and for the rest of the channels we will have np.nan
     """
     # Reshape images to 2D array (n_samples, h*w, c)
-    flattened_images = images_input.reshape(images_input.shape[0], -1, images_input.shape[3])
+    flattened_images = images_input.reshape(
+        images_input.shape[0], -1, images_input.shape[3]
+    )
 
     pca_channels = []
     reconstructed_channels = []
@@ -80,7 +82,7 @@ def pca_multiple_images(
         channel_data = flattened_images[:, :, i]
         channel_data = channel_data.astype(np.float32) / 255.0
         channel_data = channel_data.T
-    
+
         # Apply PCA to the channel data
         pca = PCA(n_components=n_components).fit(channel_data)
         pca_channel = pca.transform(channel_data)
@@ -90,7 +92,7 @@ def pca_multiple_images(
         reconstructed_channel = reconstructed_channel.T
 
         # Get explained variance ratio for this channel (if it is a color channel)
-        if i <= 2:  
+        if i <= 2:
             explained_variance_ratio = pca.explained_variance_ratio_
             cumulative_variance_ratio = np.cumsum(explained_variance_ratio)
             total_variance_explained = cumulative_variance_ratio[-1]
@@ -106,6 +108,11 @@ def pca_multiple_images(
     reconstructed_images = reconstructed_images.reshape(images_input.shape)
 
     pca_images = np.stack(pca_channels, axis=-1)
-    pca_images = pca_images.reshape(pca_images.shape[0], images_input.shape[1], images_input.shape[2], images_input.shape[3])
+    pca_images = pca_images.reshape(
+        pca_images.shape[0],
+        images_input.shape[1],
+        images_input.shape[2],
+        images_input.shape[3],
+    )
 
     return reconstructed_images, pca_images, total_variance_explained_channels
