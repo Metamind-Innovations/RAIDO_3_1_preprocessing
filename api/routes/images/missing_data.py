@@ -49,7 +49,7 @@ def detect_missing_data_endpoint(
             "content": {
                 "application/json": {},
             },
-            "description": "Return a JSON file with the denoised image.",
+            "description": "Return a JSON file with the imputed image.",
         }
     },
     response_class=Response,
@@ -67,8 +67,7 @@ def impute_missing_data_endpoint(
         elif method is ImputationName.median:
             method_name = "median"
 
-        missing_coords = detect_missing_data(img_array)
-        imputed_image = impute_missing_data(img_array, missing_coords, method_name)
+        imputed_image = impute_missing_data(img_array, method_name)
 
         headers = {"Content-Disposition": 'attachment; filename="imputed_image.json"'}
 
@@ -94,7 +93,7 @@ def impute_missing_data_endpoint(
             "content": {
                 "application/json": {},
             },
-            "description": "Return a JSON file with the denoised image.",
+            "description": "Return a JSON file with the interpolated image.",
         }
     },
     response_class=Response,
@@ -116,10 +115,7 @@ def interpolate_missing_data_endpoint(
         elif method is InterpolationName.cubic:
             method_name = "cubic"
 
-        missing_coords = detect_missing_data(img_array)
-        interpolated_image = interpolate_missing_data(
-            img_array, missing_coords, method_name
-        )
+        interpolated_image = interpolate_missing_data(img_array, method_name)
 
         headers = {
             "Content-Disposition": 'attachment; filename="interpolated_image.json"'
@@ -209,8 +205,7 @@ def visualize_imputed_image_endpoint(
         elif method is ImputationName.median:
             method_name = "median"
 
-        missing_coords = detect_missing_data(img_array)
-        imputed_image = impute_missing_data(img_array, missing_coords, method_name)
+        imputed_image = impute_missing_data(img_array, method_name)
 
         plt.figure(figsize=(12, 6))
         plt.suptitle(f"Imputation using {method_name} method")
@@ -271,10 +266,7 @@ def visualize_interpolated_image_endpoint(
         elif method is InterpolationName.cubic:
             method_name = "cubic"
 
-        missing_coords = detect_missing_data(img_array)
-        interpolated_image = interpolate_missing_data(
-            img_array, missing_coords, method_name
-        )
+        interpolated_image = interpolate_missing_data(img_array, method_name)
 
         plt.figure(figsize=(12, 6))
         plt.suptitle(f"Interpolation using {method_name} method")

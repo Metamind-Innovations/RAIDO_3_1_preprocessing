@@ -1,5 +1,6 @@
 from typing import Union
 
+from matplotlib import pyplot as plt
 import numpy as np
 from PIL import Image
 from scipy import interpolate
@@ -7,7 +8,7 @@ from scipy import interpolate
 
 def detect_missing_data(image: Union[np.ndarray, Image.Image]) -> np.ndarray:
     """Detect missing data in an image"""
-    # Convert PIL image to numpy array if necessary
+
     if not isinstance(image, np.ndarray):
         image = np.array(image)
 
@@ -20,13 +21,14 @@ def detect_missing_data(image: Union[np.ndarray, Image.Image]) -> np.ndarray:
 
 
 def impute_missing_data(
-    image: Union[np.ndarray, Image.Image], coords: np.ndarray, mode: str = "mean"
+    image: Union[np.ndarray, Image.Image], mode: str = "mean"
 ) -> np.ndarray:
     """Impute missing data in an image using a single value"""
 
-    # Convert PIL image to numpy array if necessary
     if not isinstance(image, np.ndarray):
         image = np.array(image)
+
+    coords = detect_missing_data(image)
 
     missing_pixels_mask = np.zeros(image.shape[:2], dtype=bool)
     missing_pixels_mask[coords[:, 0], coords[:, 1]] = True
@@ -46,7 +48,7 @@ def impute_missing_data(
 
 
 def interpolate_missing_data(
-    image: Union[np.ndarray, Image.Image], coords: np.ndarray, method: str = "linear"
+    image: Union[np.ndarray, Image.Image], method: str = "linear"
 ) -> np.ndarray:
     """Interpolate missing data in an image using a specified method"""
 
@@ -57,6 +59,8 @@ def interpolate_missing_data(
     # Convert PIL image to numpy array if necessary
     if not isinstance(image, np.ndarray):
         image = np.array(image)
+
+    coords = detect_missing_data(image)
 
     # Coordinates for all pixels
     rows, cols = np.indices(image.shape[:2])
@@ -82,3 +86,77 @@ def interpolate_missing_data(
         )
 
     return interpolated_image
+
+
+def visualize_missing_data(
+    image: Union[np.ndarray, Image.Image],
+) -> None:
+    if not isinstance(image, np.ndarray):
+        image = np.array(image)
+
+    missing_coords = detect_missing_data(image)
+
+    plt.figure(figsize=(10, 8))
+    plt.imshow(image)
+    plt.title("Missing Data")
+    plt.scatter(
+        missing_coords[:, 1], missing_coords[:, 0], color="red", marker="o", s=100
+    )
+    plt.axis("off")
+    plt.show()
+
+
+def visualize_imputed_data(
+    image: Union[np.ndarray, Image.Image],
+    mode: str = "mean",
+) -> None:
+    if not isinstance(image, np.ndarray):
+        image = np.array(image)
+
+    imputed_image = impute_missing_data(image, mode)
+
+    plt.figure(figsize=(12, 6))
+    plt.suptitle(f"Imputation using {mode} method")
+
+    # Plot original image
+    plt.subplot(1, 2, 1)
+    plt.imshow(image)
+    plt.title("Original Image")
+    plt.axis("off")
+
+    # Plot imputed image
+    plt.subplot(1, 2, 2)
+    plt.imshow(imputed_image)
+    plt.title("Imputed Image")
+    plt.axis("off")
+
+    plt.tight_layout()
+    plt.show()
+
+
+def visualize_interpolated_data(
+    image: Union[np.ndarray, Image.Image],
+    method: str = "linear"
+):
+    if not isinstance(image, np.ndarray):
+        image = np.array(image)
+
+    interpolated_image = interpolate_missing_data(image, method)
+
+    plt.figure(figsize=(12, 6))
+    plt.suptitle(f"Interpolation using {method} method")
+
+    # Plot original image
+    plt.subplot(1, 2, 1)
+    plt.imshow(image)
+    plt.title("Original Image")
+    plt.axis("off")
+
+    # Plot interpoalted image
+    plt.subplot(1, 2, 2)
+    plt.imshow(interpolated_image)
+    plt.title("Interpolated Image")
+    plt.axis("off")
+
+    plt.tight_layout()
+    plt.show()
