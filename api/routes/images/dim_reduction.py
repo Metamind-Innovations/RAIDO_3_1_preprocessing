@@ -285,7 +285,8 @@ def visualize_multiple_pca_images_endpoint(
         plt.suptitle("Eigen Images using PCA")
         for i, pca_image in enumerate(pca_images):
             plt.subplot(num_rows, min(3, num_images), i + 1)
-            plt.imshow(pca_image)
+            normalized_image = (pca_image - pca_image.min()) / (pca_image.max() - pca_image.min())
+            plt.imshow(normalized_image)
             plt.axis("off")
         plt.tight_layout()
 

@@ -1,5 +1,6 @@
 from typing import Union
 
+from matplotlib import pyplot as plt
 import numpy as np
 from PIL import Image
 from sklearn.decomposition import PCA
@@ -15,7 +16,7 @@ def pca_single_image(
     total_variance_explained_channels is a list of the total variance explained by the PCA for each channel, if we have an RGB image then we will have 3 values (RGB)
     and for the rest of the channels we will have np.nan
     """
-    # Convert PIL image to numpy array if necessary
+
     if not isinstance(image, np.ndarray):
         image = np.array(image)
 
@@ -116,3 +117,87 @@ def pca_multiple_images(
     )
 
     return reconstructed_images, pca_images, total_variance_explained_channels
+
+
+def visualize_single_reconstructed_image(
+    image: Union[np.ndarray, Image.Image],
+    n_components: int = 30,
+):
+    if not isinstance(image, np.ndarray):
+        image = np.array(image)
+
+    reconstructed_image, _, _ = pca_single_image(image, n_components)
+
+    plt.figure(figsize=(12, 6))
+    plt.suptitle("Single-Image reconstruction using PCA components")
+
+    # Plot original image
+    plt.subplot(1, 2, 1)
+    plt.imshow(image)
+    plt.title("Original Image")
+    plt.axis("off")
+
+    # Plot denoised image
+    plt.subplot(1, 2, 2)
+    plt.imshow(reconstructed_image)
+    plt.title("Reconstructed Image")
+    plt.axis("off")
+
+    plt.tight_layout()
+    plt.show()
+
+
+def visualize_multiple_reconstructed_images(
+    images_input: np.ndarray,
+    n_components: int = 2,
+):
+    reconstructed_images, _, _ = pca_multiple_images(images_input, n_components)
+
+    num_images = len(images_input)
+    num_rows = (
+        num_images - 1
+    ) // 3 + 1  # Calculate rows needed for original images
+    total_rows = num_rows * 2  # Double the rows to accommodate reconstructed images
+
+    plt.figure()
+    plt.suptitle("Original vs Reconstructed Images using PCA")
+
+    # Plot original images
+    for i in range(num_images):
+        plt.subplot(total_rows, 3, i + 1)
+        plt.imshow(images_input[i])
+        plt.title(f"Original {i+1}")
+        plt.axis("off")
+
+    # Plot reconstructed images starting from new row
+    start_idx = num_rows * 3  # Start index for reconstructed images
+    for i in range(num_images):
+        plt.subplot(total_rows, 3, start_idx + i + 1)
+        plt.imshow(reconstructed_images[i])
+        plt.title(f"Reconstructed {i+1}")
+        plt.axis("off")
+
+    plt.tight_layout()
+    plt.show()
+
+
+def visualize_multiple_pca_images(
+    images_input: np.ndarray,
+    n_components: int = 2,
+):
+    _, pca_images, _ = pca_multiple_images(images_input, n_components)
+
+    # Calculate rows and columns based on n_components instead of num_images
+    num_cols = 3
+    num_rows = (n_components - 1) // num_cols + 1
+
+    plt.figure(figsize=(12, 4 * num_rows))
+    plt.suptitle("Eigen Images using PCA")
+    for i, pca_image in enumerate(pca_images):
+        plt.subplot(num_rows, num_cols, i + 1)
+        normalized_image = (pca_image - pca_image.min()) / (pca_image.max() - pca_image.min())
+        plt.imshow(normalized_image)
+        plt.title(f"Component {i+1}")
+        plt.axis("off")
+    plt.tight_layout()
+    plt.show()

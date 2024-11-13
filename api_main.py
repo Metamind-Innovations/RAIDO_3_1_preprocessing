@@ -48,9 +48,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# TODO: Update src image outliers and dim reduction
-# -> Add visualization functions in the respective src .py files
-# -> Update functions to be self-contained similarly to how it is done in the APIs (match input/output between src and API functions)
-# -> Update API routes to match the new functions

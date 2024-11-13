@@ -44,7 +44,7 @@ def denoise_non_local_means_endpoint(
         else:
             fast_mode = False
 
-        if img.mode == "RGB":
+        if img.mode == "RGB" or img.mode == "RGBA":
             multichannel = True
         else:
             multichannel = False
@@ -99,7 +99,7 @@ def visualize_denoised_image_endpoint(
         else:
             fast_mode = False
 
-        if img.mode == "RGB":
+        if img.mode == "RGB" or img.mode == "RGBA":
             multichannel = True
         else:
             multichannel = False

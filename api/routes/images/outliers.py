@@ -211,7 +211,7 @@ def visualize_image_outliers_endpoint(
                 plt.title("Normal")
 
             plt.axis("off")
-        plt.tight_layout()  # Reduce white margins
+        plt.tight_layout()
 
         img_buffer = io.BytesIO()
         plt.savefig(img_buffer, bbox_inches="tight", format="png")

@@ -1,5 +1,6 @@
 from typing import Tuple, Union
 
+from matplotlib import pyplot as plt
 import numpy as np
 from PIL import Image
 from sklearn.ensemble import IsolationForest
@@ -91,3 +92,71 @@ def detect_pixel_level_outliers(
         masked_image[outlier_labels == -1] = 0
 
     return outlier_coords
+
+
+def visualize_image_outliers(
+    images_input: np.ndarray,
+    method: str = "isolation_forest",
+    *,
+    n_estimators: int = 100,
+    contamination: float = 0.1,
+    random_state: int = 42,
+):
+    outlier_labels = detect_image_level_outliers(images_input, method, n_estimators=n_estimators, contamination=contamination, random_state=random_state)
+
+    num_images = len(images_input)
+    num_rows = (num_images - 1) // 3 + 1  # Calculate number of rows needed
+
+    plt.figure(figsize=(12, 4 * num_rows))
+    plt.suptitle(f"Outlier Images detection using {method}")
+    for i, image in enumerate(images_input):
+        ax = plt.subplot(num_rows, min(3, num_images), i + 1)
+        plt.imshow(image)
+
+        # Add red rectangle around outlier images
+        if outlier_labels[i] == -1:  # -1 indicates outlier
+            # Create a red rectangle patch with small margin from borders
+            margin = 5  # pixels from border
+            rect = plt.Rectangle(
+                (0, margin),  # (x,y) of lower left corner
+                image.shape[1] - margin,  # width
+                image.shape[0] - 2 * margin,  # height
+                fill=False,
+                edgecolor="red",
+                linewidth=5,
+            )
+            ax.add_patch(rect)
+            plt.title("Outlier")
+        else:
+            plt.title("Normal")
+
+        plt.axis("off")
+    plt.tight_layout()
+    plt.show()
+
+
+def visualize_pixel_outliers(
+    image: Union[np.ndarray, Image.Image],
+    method: str = "lof",
+    *,
+    n_neighbors: int = 20,
+    contamination: float = 0.1,
+):
+    if not isinstance(image, np.ndarray):
+        image = np.array(image)
+
+    outlier_coords = detect_pixel_level_outliers(image, method, n_neighbors=n_neighbors, contamination=contamination)
+
+    plt.figure(figsize=(10, 8))
+    plt.title(f"Outlier pixels detection using {method}")
+    plt.imshow(image)
+    plt.scatter(
+        outlier_coords[:, 1],
+        outlier_coords[:, 0],
+        color="red",
+        marker="o",
+        s=20,
+    )
+    plt.axis("off")
+    plt.tight_layout()
+    plt.show()
