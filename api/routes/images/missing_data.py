@@ -210,13 +210,11 @@ def visualize_imputed_image_endpoint(
         plt.figure(figsize=(12, 6))
         plt.suptitle(f"Imputation using {method_name} method")
 
-        # Plot original image
         plt.subplot(1, 2, 1)
         plt.imshow(img_array)
         plt.title("Original Image")
         plt.axis("off")
 
-        # Plot imputed image
         plt.subplot(1, 2, 2)
         plt.imshow(imputed_image)
         plt.title("Imputed Image")
@@ -271,13 +269,11 @@ def visualize_interpolated_image_endpoint(
         plt.figure(figsize=(12, 6))
         plt.suptitle(f"Interpolation using {method_name} method")
 
-        # Plot original image
         plt.subplot(1, 2, 1)
         plt.imshow(img_array)
         plt.title("Original Image")
         plt.axis("off")
 
-        # Plot interpoalted image
         plt.subplot(1, 2, 2)
         plt.imshow(interpolated_image)
         plt.title("Interpolated Image")

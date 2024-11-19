@@ -149,13 +149,11 @@ def visualize_single_reconstructed_image_endpoint(
         plt.figure(figsize=(12, 6))
         plt.suptitle("Single-Image reconstruction using PCA components")
 
-        # Plot original image
         plt.subplot(1, 2, 1)
         plt.imshow(img_array)
         plt.title("Original Image")
         plt.axis("off")
 
-        # Plot denoised image
         plt.subplot(1, 2, 2)
         plt.imshow(reconstructed_image)
         plt.title("Reconstructed Image")

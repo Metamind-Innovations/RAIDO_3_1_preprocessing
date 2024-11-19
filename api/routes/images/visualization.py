@@ -29,7 +29,6 @@ def plot_image_endpoint(
     title: str = Query(None, description="The title of the plot"),
 ):
     try:
-        # Read the uploaded image
         img = Image.open(image.file)
         img_array = np.array(img)
 
@@ -39,7 +38,6 @@ def plot_image_endpoint(
             plt.title(title)
         plt.axis("off")
 
-        # Save the figure to a PNG file
         img_buffer = io.BytesIO()
         plt.savefig(img_buffer, bbox_inches="tight", format="png")
         img_buffer.seek(0)

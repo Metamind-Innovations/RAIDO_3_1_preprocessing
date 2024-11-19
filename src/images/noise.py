@@ -43,7 +43,10 @@ def visualize_denoised_image(
         image = np.array(image)
 
     denoised_image, noise_mask = denoise_non_local_means(
-        image, patch_size, patch_distance, fast_mode,
+        image,
+        patch_size,
+        patch_distance,
+        fast_mode,
     )
 
     # Normalize noise mask to [0,1] range

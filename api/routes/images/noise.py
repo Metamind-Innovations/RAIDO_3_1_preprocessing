@@ -46,7 +46,10 @@ def denoise_non_local_means_endpoint(
             fast_mode = False
 
         denoised_image, noise_mask = denoise_non_local_means(
-            img_array, patch_size, patch_distance, fast_mode,
+            img_array,
+            patch_size,
+            patch_distance,
+            fast_mode,
         )
 
         headers = {"Content-Disposition": 'attachment; filename="denoised_image.json"'}
@@ -99,11 +102,16 @@ def visualize_denoised_image_endpoint(
             fast_mode = False
 
         denoised_image, noise_mask = denoise_non_local_means(
-            img_array, patch_size, patch_distance, fast_mode,
+            img_array,
+            patch_size,
+            patch_distance,
+            fast_mode,
         )
 
         # Normalize noise mask to [0,1] range
-        noise_mask = (noise_mask - noise_mask.min()) / (noise_mask.max() - noise_mask.min())
+        noise_mask = (noise_mask - noise_mask.min()) / (
+            noise_mask.max() - noise_mask.min()
+        )
 
         plt.figure(figsize=(12, 8))
         plt.suptitle("Non-Local Means Denoising")
@@ -115,17 +123,14 @@ def visualize_denoised_image_endpoint(
         ax2 = plt.subplot(gs[0, 2:])
         ax3 = plt.subplot(gs[1, 1:3])
 
-        # Plot original image
         ax1.imshow(img_array)
         ax1.set_title("Original Image")
         ax1.axis("off")
 
-        # Plot denoised image
         ax2.imshow(denoised_image)
         ax2.set_title("Denoised Image")
         ax2.axis("off")
 
-        # Plot noise mask
         ax3.imshow(noise_mask)
         ax3.set_title("Noise Mask")
         ax3.axis("off")

@@ -58,7 +58,6 @@ def detect_image_level_outliers_endpoint(
             img_array = resize_image(img_array, height=image_size, width=image_size)
             processed_images.append(img_array)
 
-        # Stack into single array
         images_array = np.stack(processed_images)
 
         if method is ImageOutlierDetectionMethod.isolation_forest:
@@ -167,7 +166,6 @@ def visualize_image_outliers_endpoint(
             img_array = resize_image(img_array, height=image_size, width=image_size)
             processed_images.append(img_array)
 
-        # Stack into single array
         images_array = np.stack(processed_images)
 
         if method is ImageOutlierDetectionMethod.isolation_forest:
