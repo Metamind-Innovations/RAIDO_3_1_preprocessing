@@ -6,6 +6,7 @@ from fastapi import APIRouter, File, Query, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
 from matplotlib import pyplot as plt
+import matplotlib.gridspec as gridspec
 import numpy as np
 
 from api.models import DenoiseMode
@@ -44,18 +45,16 @@ def denoise_non_local_means_endpoint(
         else:
             fast_mode = False
 
-        if img.mode == "RGB" or img.mode == "RGBA":
-            multichannel = True
-        else:
-            multichannel = False
-
-        denoised_image = denoise_non_local_means(
-            img_array, patch_size, patch_distance, fast_mode, multichannel
+        denoised_image, noise_mask = denoise_non_local_means(
+            img_array, patch_size, patch_distance, fast_mode,
         )
 
         headers = {"Content-Disposition": 'attachment; filename="denoised_image.json"'}
 
-        denoise_non_local_means_output = {"denoised_image": denoised_image.tolist()}
+        denoise_non_local_means_output = {
+            "denoised_image": denoised_image.tolist(),
+            "noise_mask": noise_mask.tolist(),
+        }
     except Exception as e:
         return JSONResponse(
             status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"})
@@ -99,31 +98,37 @@ def visualize_denoised_image_endpoint(
         else:
             fast_mode = False
 
-        if img.mode == "RGB" or img.mode == "RGBA":
-            multichannel = True
-        else:
-            multichannel = False
-
-        denoised_image = denoise_non_local_means(
-            img_array, patch_size, patch_distance, fast_mode, multichannel
+        denoised_image, noise_mask = denoise_non_local_means(
+            img_array, patch_size, patch_distance, fast_mode,
         )
 
-        plt.figure(figsize=(12, 6))
+        # Normalize noise mask to [0,1] range
+        noise_mask = (noise_mask - noise_mask.min()) / (noise_mask.max() - noise_mask.min())
+
+        plt.figure(figsize=(12, 8))
         plt.suptitle("Non-Local Means Denoising")
 
+        gs = gridspec.GridSpec(2, 4)
+        gs.update(wspace=0.5)
+
+        ax1 = plt.subplot(gs[0, :2])
+        ax2 = plt.subplot(gs[0, 2:])
+        ax3 = plt.subplot(gs[1, 1:3])
+
         # Plot original image
-        plt.subplot(1, 2, 1)
-        plt.imshow(img_array)
-        plt.title("Original Image")
-        plt.axis("off")
+        ax1.imshow(img_array)
+        ax1.set_title("Original Image")
+        ax1.axis("off")
 
         # Plot denoised image
-        plt.subplot(1, 2, 2)
-        plt.imshow(denoised_image)
-        plt.title("Denoised Image")
-        plt.axis("off")
+        ax2.imshow(denoised_image)
+        ax2.set_title("Denoised Image")
+        ax2.axis("off")
 
-        plt.tight_layout()
+        # Plot noise mask
+        ax3.imshow(noise_mask)
+        ax3.set_title("Noise Mask")
+        ax3.axis("off")
 
         img_buffer = io.BytesIO()
         plt.savefig(img_buffer, bbox_inches="tight", format="png")

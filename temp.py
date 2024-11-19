@@ -4,31 +4,29 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 
-from src.images.outliers import detect_pixel_level_outliers, visualize_pixel_outliers, visualize_image_outliers
-from src.images.dim_reduction import pca_single_image, pca_multiple_images, visualize_single_reconstructed_image, visualize_multiple_reconstructed_images, visualize_multiple_pca_images
+from src.images.outliers import (
+    detect_pixel_level_outliers,
+    visualize_pixel_outliers,
+    visualize_image_outliers,
+)
+from src.images.dim_reduction import (
+    pca_single_image,
+    pca_multiple_images,
+    visualize_single_reconstructed_image,
+    visualize_multiple_reconstructed_images,
+    visualize_multiple_pca_images,
+)
 from src.images.utils import load_and_process_image
 from src.images.visualization import plot_multiple_images
 
 from src.images.noise import denoise_non_local_means, visualize_denoised_image
-from src.images.missing_data import visualize_imputed_data, visualize_interpolated_data, visualize_missing_data
+from src.images.missing_data import (
+    visualize_imputed_data,
+    visualize_interpolated_data,
+    visualize_missing_data,
+)
 
-# img_folder = "plant_images/outlier_test"
-
-# # Get list of image files in the folder
-# image_files = [f for f in os.listdir(img_folder) if f.endswith(('.png', '.jpg', '.jpeg'))]
-
-# # Process each image
-# processed_images = []
-# for img_file in image_files:
-#     img_path = os.path.join(img_folder, img_file)
-#     image_array = load_and_process_image(img_path)
-#     processed_images.append(image_array)
-
-# processed_images_array = np.stack(processed_images)
-
-# visualize_image_outliers(processed_images_array, method="isolation_forest")
-
-img_path = "plant_images/healthy_flower_1.png"
+img_path = "plant_images/fumagina_1_noisy.png"
 img = Image.open(img_path)
 img = np.array(img)
-visualize_pixel_outliers(img, method="lof", n_neighbors=100, contamination=0.01)
+visualize_denoised_image(img, fast_mode=True)

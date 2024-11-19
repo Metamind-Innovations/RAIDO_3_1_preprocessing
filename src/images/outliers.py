@@ -102,7 +102,13 @@ def visualize_image_outliers(
     contamination: float = 0.1,
     random_state: int = 42,
 ):
-    outlier_labels = detect_image_level_outliers(images_input, method, n_estimators=n_estimators, contamination=contamination, random_state=random_state)
+    outlier_labels = detect_image_level_outliers(
+        images_input,
+        method,
+        n_estimators=n_estimators,
+        contamination=contamination,
+        random_state=random_state,
+    )
 
     num_images = len(images_input)
     num_rows = (num_images - 1) // 3 + 1  # Calculate number of rows needed
@@ -145,7 +151,9 @@ def visualize_pixel_outliers(
     if not isinstance(image, np.ndarray):
         image = np.array(image)
 
-    outlier_coords = detect_pixel_level_outliers(image, method, n_neighbors=n_neighbors, contamination=contamination)
+    outlier_coords = detect_pixel_level_outliers(
+        image, method, n_neighbors=n_neighbors, contamination=contamination
+    )
 
     plt.figure(figsize=(10, 8))
     plt.title(f"Outlier pixels detection using {method}")

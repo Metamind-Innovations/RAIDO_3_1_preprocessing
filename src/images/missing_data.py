@@ -135,8 +135,7 @@ def visualize_imputed_data(
 
 
 def visualize_interpolated_data(
-    image: Union[np.ndarray, Image.Image],
-    method: str = "linear"
+    image: Union[np.ndarray, Image.Image], method: str = "linear"
 ):
     if not isinstance(image, np.ndarray):
         image = np.array(image)

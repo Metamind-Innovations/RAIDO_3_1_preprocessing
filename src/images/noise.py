@@ -1,6 +1,7 @@
 from typing import Union
 
 from matplotlib import pyplot as plt
+import matplotlib.gridspec as gridspec
 import numpy as np
 from PIL import Image
 from skimage import img_as_float
@@ -12,17 +13,14 @@ def denoise_non_local_means(
     patch_size: int = 7,
     patch_distance: int = 11,
     fast_mode: bool = False,
-    multichannel: bool = False,
 ) -> np.ndarray:
     if not isinstance(image, np.ndarray):
         image = np.array(image)
 
     image = img_as_float(image)
 
-    if multichannel:
-        channel_axis = -1
-    else:
-        channel_axis = None
+    # Determine channel_axis based on image dimensions
+    channel_axis = -1 if len(image.shape) > 2 else None
 
     patch_kw = dict(
         patch_size=patch_size, patch_distance=patch_distance, channel_axis=channel_axis
@@ -30,7 +28,9 @@ def denoise_non_local_means(
 
     denoised_image = denoise_nl_means(image, fast_mode=fast_mode, **patch_kw)
 
-    return denoised_image
+    noise_mask = image - denoised_image
+
+    return denoised_image, noise_mask
 
 
 def visualize_denoised_image(
@@ -38,31 +38,40 @@ def visualize_denoised_image(
     patch_size: int = 7,
     patch_distance: int = 11,
     fast_mode: bool = False,
-    multichannel: bool = False,
 ) -> None:
     if not isinstance(image, np.ndarray):
         image = np.array(image)
 
-    denoised_image = denoise_non_local_means(
-        image, patch_size, patch_distance, fast_mode, multichannel
+    denoised_image, noise_mask = denoise_non_local_means(
+        image, patch_size, patch_distance, fast_mode,
     )
 
-    plt.figure(figsize=(12, 6))
+    # Normalize noise mask to [0,1] range
+    noise_mask = (noise_mask - noise_mask.min()) / (noise_mask.max() - noise_mask.min())
+
+    plt.figure(figsize=(12, 8))
     plt.suptitle("Non-Local Means Denoising")
 
+    gs = gridspec.GridSpec(2, 4)
+    gs.update(wspace=0.5)
+
+    ax1 = plt.subplot(gs[0, :2])
+    ax2 = plt.subplot(gs[0, 2:])
+    ax3 = plt.subplot(gs[1, 1:3])
+
     # Plot original image
-    plt.subplot(1, 2, 1)
-    plt.imshow(image)
-    plt.title("Original Image")
-    plt.axis("off")
+    ax1.imshow(image)
+    ax1.set_title("Original Image")
+    ax1.axis("off")
 
     # Plot denoised image
-    plt.subplot(1, 2, 2)
-    plt.imshow(denoised_image)
-    plt.title("Denoised Image")
-    plt.axis("off")
+    ax2.imshow(denoised_image)
+    ax2.set_title("Denoised Image")
+    ax2.axis("off")
 
-    plt.tight_layout()
+    # Plot noise mask
+    ax3.imshow(noise_mask)
+    ax3.set_title("Noise Mask")
+    ax3.axis("off")
+
     plt.show()
-
-# TODO: Return or create a function that returns the noise mask

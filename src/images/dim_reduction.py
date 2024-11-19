@@ -154,9 +154,7 @@ def visualize_multiple_reconstructed_images(
     reconstructed_images, _, _ = pca_multiple_images(images_input, n_components)
 
     num_images = len(images_input)
-    num_rows = (
-        num_images - 1
-    ) // 3 + 1  # Calculate rows needed for original images
+    num_rows = (num_images - 1) // 3 + 1  # Calculate rows needed for original images
     total_rows = num_rows * 2  # Double the rows to accommodate reconstructed images
 
     plt.figure()
@@ -195,7 +193,9 @@ def visualize_multiple_pca_images(
     plt.suptitle("Eigen Images using PCA")
     for i, pca_image in enumerate(pca_images):
         plt.subplot(num_rows, num_cols, i + 1)
-        normalized_image = (pca_image - pca_image.min()) / (pca_image.max() - pca_image.min())
+        normalized_image = (pca_image - pca_image.min()) / (
+            pca_image.max() - pca_image.min()
+        )
         plt.imshow(normalized_image)
         plt.title(f"Component {i+1}")
         plt.axis("off")
