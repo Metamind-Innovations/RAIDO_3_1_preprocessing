@@ -60,3 +60,16 @@ class OutlierPixels(BaseModel):
 class DenoiseMode(str, Enum):
     fast = "fast"
     slow = "slow"
+
+
+class ImageTransformation(str, Enum):
+    Rotation = "rotation"
+    crop = "crop"
+    resize = "resize"
+    shear = "shear"
+    brightness = "brightness"
+    contrast = "contrast"
+    saturation = "saturation"
+    hue = "hue"
+    vertical_flip = "vertical_flip"
+    horizontal_flip = "horizontal_flip"

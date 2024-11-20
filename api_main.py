@@ -7,6 +7,7 @@ from api.routes.images import (
     outliers,
     dim_reduction,
     noise,
+    enrichment,
 )
 
 
@@ -21,7 +22,7 @@ tags_metadata = [
     },
     {
         "name": "Images Outliers",
-        "description": "Operations related to detecting and visualizingoutliers in images.",
+        "description": "Operations related to detecting and visualizing outliers in images.",
     },
     {
         "name": "Images Dimensionality Reduction",
@@ -30,6 +31,10 @@ tags_metadata = [
     {
         "name": "Images Noise Removal",
         "description": "Operations related to noise removal in images.",
+    },
+    {
+        "name": "Images Enrichment",
+        "description": "Operations related to image enrichment.",
     },
 ]
 
@@ -40,6 +45,7 @@ app.include_router(visualization.router)
 app.include_router(outliers.router)
 app.include_router(dim_reduction.router)
 app.include_router(noise.router)
+app.include_router(enrichment.router)
 
 
 def main():

@@ -12,6 +12,7 @@ fonttools==4.54.1
 h11==0.14.0
 idna==3.10
 imageio==2.36.0
+imbalanced-learn==0.12.4
 joblib==1.4.2
 kiwisolver==1.4.7
 lazy_loader==0.4

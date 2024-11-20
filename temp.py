@@ -26,26 +26,31 @@ from src.images.missing_data import (
     visualize_missing_data,
 )
 
-from src.images.enrichment import rotate_image, visualize_rotated_images
+from src.images.enrichment import (
+    transform_images,
+    visualize_transformed_images,
+    normalize_pixel_values,
+)
 
-img_folder = "plant_images/outlier_test"
+from src.images.balancing import analyze_class_distribution
 
-# Get list of image files in folder
-img_files = [f for f in os.listdir(img_folder) if f.endswith(('.png', '.jpg', '.jpeg'))]
+label_csv = pd.read_csv("plant_images/labels.csv")
+labels = label_csv["CLASS"].tolist()
 
-# Load and convert each image to numpy array
-images = []
-for img_file in img_files:
-    img_path = os.path.join(img_folder, img_file)
-    img = Image.open(img_path)
-    img_array = np.array(img)
-    images.append(img_array)
+result = analyze_class_distribution(labels)
+print(result)
+# print("\nClass Distribution Analysis:")
+# print("-" * 30)
+# print(f"\nTotal Samples: {result['total_samples']}")
+# print(f"Number of Classes: {result['num_classes']}")
+# print(f"\nMajority Class: {result['majority_class']}")
+# print(f"Minority Class: {result['minority_class']}")
+# print(f"Imbalance Ratio: {result['imbalance_ratio']:.2f}")
 
-transformed_images = rotate_image(images, negative_angle=-90, positive_angle=90)
+# print("\nClass Counts:")
+# for cls, count in result['class_counts'].items():
+#     print(f"{cls:25} {count:5d} ({result['class_percentages'][cls]:.1f}%)")
 
-visualize_rotated_images(transformed_images, negative_angle=-90, positive_angle=90)
-
-print(len(transformed_images))
-
-for image in transformed_images:
-    print(image.shape)
+# print(f"\nMean Samples per Class: {result['mean_samples_per_class']:.1f}")
+# print(f"Std Dev Samples per Class: {result['std_samples_per_class']:.1f}")
+# print(f"Distribution Entropy: {result['class_distribution_entropy']:.2f}")
