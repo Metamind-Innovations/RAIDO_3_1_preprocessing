@@ -1,49 +1,60 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.linear_model import LinearRegression
 
 
-def keep_data_avg(dataframe: pd.DataFrame) -> pd.DataFrame:
-    dataframe.set_index('time', inplace=True)
-    daily_avg = dataframe.resample('D').mean()
-    daily_avg.reset_index(inplace=True)
-    daily_avg['time'] = daily_avg['time'].dt.strftime('%d/%m/%Y')
-    daily_avg['value'] = daily_avg['value'].round(2)
-    return daily_avg
+def normalize_data(dataframe: pd.DataFrame, column_name: str = 'value') -> pd.DataFrame:
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    normalized_df = dataframe.copy()
+    normalized_df[column_name] = scaler.fit_transform(dataframe[[column_name]])
+    return normalized_df
 
-
-def plot_imputed_data(dataframe: pd.DataFrame, method: str):
-    data_no_zeros = dataframe['value'].replace(0, np.nan)
+def impute_missing_data(df: pd.DataFrame, method: str, column_name='value'):
     if method == 'mean':
-        mean_value = data_no_zeros.mean()
-        data_imputed = dataframe.copy()
-        data_imputed['value'] = data_imputed['value'].replace(0, mean_value)
+        mean_imputer = SimpleImputer(strategy='mean')
+        df[column_name] = mean_imputer.fit_transform(df[[column_name]])
+        return df
+
     elif method == 'median':
-        median_value = data_no_zeros.median()
-        data_imputed = dataframe.copy()
-        data_imputed['value'] = data_imputed['value'].replace(0, median_value)
-    else:
-        raise NotImplementedError(f"Invalid method: {method}")
+        median_imputer = SimpleImputer(strategy='median')
+        df[column_name] = median_imputer.fit_transform(df[[column_name]])
+        return df
 
-    fig, ax = plt.subplots(3, figsize=(16, 8))
-    fig.autofmt_xdate()
-    plt.plot(dataframe['time'], dataframe['value'], label='Original Data', color='blue', alpha=0.5)
+    elif method == 'most_frequent':
+        most_frequent_imputer = SimpleImputer(strategy='most_frequent')
+        df[column_name] = most_frequent_imputer.fit_transform(df[[column_name]])
+        return df
 
-    # Plot imputed data in red for zero values, and same as original for non-zero values
-    mask = dataframe['value'] == 0
-    plt.plot(dataframe['time'][~mask], data_imputed['value'][~mask], color='blue', alpha=0.5)
-    plt.plot(dataframe['time'][mask], data_imputed['value'][mask], color='red', linestyle='--')
+    elif method == 'linear_regression':
+        df_copy = df.copy()
+        df_copy['time_numeric'] = (
+                    pd.to_datetime(df_copy['time']) - pd.to_datetime(df_copy['time']).min()).dt.total_seconds()
+        train_idx = df_copy[column_name].notna()
 
-    plt.title(f'Data Imputed with {method.capitalize()}')
-    plt.xlabel('Date')
-    plt.ylabel('Value')
-    plt.xticks(rotation=90)
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
+        X_train = df_copy.loc[train_idx, 'time_numeric'].values.reshape(-1, 1)
+        y_train = df_copy.loc[train_idx, column_name].values
+
+        model = LinearRegression()
+        model.fit(X_train, y_train)
+
+        X_all = df_copy['time_numeric'].values.reshape(-1, 1)
+        predicted_values = model.predict(X_all)
+
+        df.loc[df[column_name].isna(), column_name] = predicted_values[df[column_name].isna()]
+        return df
+
+    return df
 
 
 if __name__ == "__main__":
-    df = pd.read_csv('power.csv', delimiter=';', parse_dates=['time'])
-    df_avg = keep_data_avg(df)
-    plot_imputed_data(df_avg, 'mean')
+    df = pd.read_csv('power.csv', sep=';', parse_dates=['time'], dayfirst=True)
+    # Replace '0' with NaN (missing value)
+    df['value'] = df['value'].replace(0, np.nan)
+    # Normalize 'values' column
+    df = normalize_data(df)
+    df = impute_missing_data(df, 'mean', 'value')
+    df.plot(x='time', y='value', figsize=(15, 6))
+    plt.show()
