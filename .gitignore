@@ -2,3 +2,4 @@
 .venv
 .ruff_cache
 plant_images/
+.idea

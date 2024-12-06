@@ -19,6 +19,13 @@ class ImputationName(str, Enum):
     median = "median"
 
 
+class ImputationNameTimeseries(str, Enum):
+    mean = "mean"
+    median = "median"
+    most_frequent = "most_frequent"
+    linear_regression = "linear_regression"
+
+
 class InterpolationName(str, Enum):
     linear = "linear"
     nearest = "nearest"
