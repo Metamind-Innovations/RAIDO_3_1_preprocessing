@@ -10,6 +10,10 @@ from api.routes.images import (
     enrichment,
 )
 
+from api.routes.time_series import (
+    ts_missing_data
+)
+
 
 tags_metadata = [
     {
@@ -46,6 +50,7 @@ app.include_router(outliers.router)
 app.include_router(dim_reduction.router)
 app.include_router(noise.router)
 app.include_router(enrichment.router)
+app.include_router(ts_missing_data.router)
 
 
 def main():
