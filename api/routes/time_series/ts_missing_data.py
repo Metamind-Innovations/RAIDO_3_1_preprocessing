@@ -22,10 +22,10 @@ def impute_missing_data_endpoint(csv: UploadFile = File(description="The csv to 
         for column in df.columns[1:]:
             df[column] = pd.to_numeric(df[column].astype(str).str.replace(',', '.'), errors='coerce')
         df = drop_empty_nan_zero_columns(df)
-        df = normalize_data(df)
         imputed_df = impute_missing_data(df, method)
-        print(imputed_df)
-        return imputed_df.to_dict(orient='records')
+        normalized_df = normalize_data(imputed_df)
+        print(normalized_df)
+        return normalized_df.to_dict(orient='records')
     except Exception as e:
         return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
     finally:

@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import LinearRegression
@@ -14,8 +15,8 @@ def normalize_data(dataframe: pd.DataFrame) -> pd.DataFrame:
     scaler = MinMaxScaler(feature_range=(0, 1))
     normalized_df = dataframe.copy()
     for column in dataframe.columns[1:]:
-        dataframe[column] = dataframe[column].replace(0, np.nan)
-        dataframe[column] = dataframe[column].replace('', np.nan)
+        normalized_df[column] = normalized_df[column].replace(0, np.nan)
+        normalized_df[column] = normalized_df[column].replace('', np.nan)
         normalized_df[column] = scaler.fit_transform(dataframe[[column]])
     return normalized_df
 
@@ -60,6 +61,10 @@ def impute_missing_data(df: pd.DataFrame, method: str):
             most_frequent_imputer = SimpleImputer(strategy='most_frequent')
             df[column] = most_frequent_imputer.fit_transform(df[[column]])
 
+        elif method == 'moving_average':
+            df[column] = df[column].ffill().bfill()
+            df[column] = df[column].rolling(window=3, min_periods=1).mean()
+
         elif method == 'linear_regression':
             df_copy = df.copy()
             df_copy['time_numeric'] = (
@@ -78,3 +83,24 @@ def impute_missing_data(df: pd.DataFrame, method: str):
             df.loc[df[column].isna(), column] = predicted_values[df[column].isna()]
 
     return df
+
+
+# if __name__ == "__main__":
+#     # Load data
+#     df = pd.read_csv('power_small.csv', sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
+#
+#     # Replace 0s with NaN for 'value' column
+#     df['value'] = df['value'].replace(0, np.nan)
+#
+#     # Perform imputation on the raw DataFrame
+#     imputed_df = impute_missing_data(df, 'moving_average')
+#     print("\nAfter imputation (raw data):")
+#     print(imputed_df.head(20))
+#
+#     # Normalize data after imputation
+#     normalized_df = normalize_data(imputed_df)
+#     print("\nAfter normalization:")
+#     print(normalized_df.head(20))
+#
+#     df.plot(x='time', y='value', kind='line')
+#     plt.show()
