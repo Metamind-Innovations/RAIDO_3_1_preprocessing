@@ -24,6 +24,7 @@ def drop_empty_nan_zero_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df.loc[:, ~((df.isna() | (df == 0)).all())]
 
 
+# TODO: Add different imputation per column
 def impute_missing_data(df: pd.DataFrame, method: str):
     """
     Imputes missing values in a given dataframe using one of the following methods.
@@ -44,6 +45,8 @@ def impute_missing_data(df: pd.DataFrame, method: str):
     -----
     For 'linear_regression', the time column must be in datetime format.
     """
+    if method == 'fill':
+        df = df.ffill().bfill()
     for column in df.columns[1:]:
         if method == 'mean':
             mean_imputer = SimpleImputer(strategy='mean')
