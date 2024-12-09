@@ -20,9 +20,11 @@ class ImputationName(str, Enum):
 
 
 class ImputationNameTimeseries(str, Enum):
+    fill = 'fill'
     mean = "mean"
     median = "median"
     most_frequent = "most_frequent"
+    moving_average = 'moving_average'
     linear_regression = "linear_regression"
 
 

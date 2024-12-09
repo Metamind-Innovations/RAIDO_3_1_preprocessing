@@ -7,7 +7,7 @@ from api.models import ImputationNameTimeseries
 from src.time_series.ts_missing_data import (
     normalize_data,
     impute_missing_data,
-    drop_empty_nan_zero_columns
+    cleanup_df_zero_nans
 )
 
 router = APIRouter(prefix="/time_series", tags=["Time Series Missing Data"])
@@ -21,10 +21,9 @@ def impute_missing_data_endpoint(csv: UploadFile = File(description="The csv to 
         df = pd.read_csv(csv.file, sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
         for column in df.columns[1:]:
             df[column] = pd.to_numeric(df[column].astype(str).str.replace(',', '.'), errors='coerce')
-        df = drop_empty_nan_zero_columns(df)
+        df = cleanup_df_zero_nans(df)
         imputed_df = impute_missing_data(df, method)
         normalized_df = normalize_data(imputed_df)
-        print(normalized_df)
         return normalized_df.to_dict(orient='records')
     except Exception as e:
         return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
