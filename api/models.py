@@ -27,6 +27,10 @@ class ImputationNameTimeseries(str, Enum):
     moving_average = 'moving_average'
     linear_regression = "linear_regression"
 
+class OutlierNameTimeseries(str, Enum):
+    both = 'both'
+    single = 'single'
+
 
 class InterpolationName(str, Enum):
     linear = "linear"

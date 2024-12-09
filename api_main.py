@@ -11,7 +11,7 @@ from api.routes.images import (
 )
 
 from api.routes.time_series import (
-    ts_missing_data
+    timeseries
 )
 
 
@@ -50,7 +50,7 @@ app.include_router(outliers.router)
 app.include_router(dim_reduction.router)
 app.include_router(noise.router)
 app.include_router(enrichment.router)
-app.include_router(ts_missing_data.router)
+app.include_router(timeseries.router)
 
 
 def main():
