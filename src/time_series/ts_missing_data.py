@@ -14,15 +14,23 @@ def normalize_data(dataframe: pd.DataFrame) -> pd.DataFrame:
     """
     scaler = MinMaxScaler(feature_range=(0, 1))
     normalized_df = dataframe.copy()
-    for column in dataframe.columns[1:]:
+    for column in normalized_df.columns[1:]:
         normalized_df[column] = normalized_df[column].replace(0, np.nan)
         normalized_df[column] = normalized_df[column].replace('', np.nan)
         normalized_df[column] = scaler.fit_transform(dataframe[[column]])
     return normalized_df
 
 
-def drop_empty_nan_zero_columns(df: pd.DataFrame) -> pd.DataFrame:
-    return df.loc[:, ~((df.isna() | (df == 0)).all())]
+def cleanup_df_zero_nans(df: pd.DataFrame) -> pd.DataFrame:
+    # Convert 0s and '' to nan
+    cleaned_df = df.copy()
+    for column in cleaned_df.columns[1:]:
+        cleaned_df[column] = cleaned_df[column].replace(0, np.nan)
+        cleaned_df[column] = cleaned_df[column].replace('', np.nan)
+
+    # Drop rows with all nans or all 0s
+    cleaned_df = cleaned_df.loc[:, ~((cleaned_df.isna() | (cleaned_df == 0)).all())]
+    return cleaned_df
 
 
 # TODO: Add different imputation per column
@@ -35,7 +43,8 @@ def impute_missing_data(df: pd.DataFrame, method: str):
     df: pd.DataFrame
         The dataframe to impute missing values.
     method: str
-        The method to use for imputation. Choices are 'mean', 'median', 'most_frequent', and 'linear_regression'.
+        The method to use for imputation. Choices are:
+        'fill', 'mean', 'median', 'most_frequent', 'moving_average' and 'linear_regression'.
 
     Returns
     -------
@@ -85,10 +94,9 @@ def impute_missing_data(df: pd.DataFrame, method: str):
 
     return df
 
-
 # if __name__ == "__main__":
 #     df = pd.read_csv('power_small.csv', sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
-#     df['value'] = df['value'].replace(0, np.nan)
+#     df = cleanup_df_zero_nans(df)
 #     print(df.head(20))
 #     # Perform imputation on the raw DataFrame
 #     imputed_df = impute_missing_data(df, 'moving_average')
