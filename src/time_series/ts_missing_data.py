@@ -62,8 +62,9 @@ def impute_missing_data(df: pd.DataFrame, method: str):
             df[column] = most_frequent_imputer.fit_transform(df[[column]])
 
         elif method == 'moving_average':
-            df[column] = df[column].ffill().bfill()
-            df[column] = df[column].rolling(window=3, min_periods=1).mean()
+            df_copy = df.copy()
+            df_copy[column] = df_copy[column].rolling(window=3, min_periods=1).mean()
+            df[column] = df_copy[column].fillna(df_copy[column].mean())
 
         elif method == 'linear_regression':
             df_copy = df.copy()
@@ -86,18 +87,13 @@ def impute_missing_data(df: pd.DataFrame, method: str):
 
 
 # if __name__ == "__main__":
-#     # Load data
 #     df = pd.read_csv('power_small.csv', sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
-#
-#     # Replace 0s with NaN for 'value' column
 #     df['value'] = df['value'].replace(0, np.nan)
-#
+#     print(df.head(20))
 #     # Perform imputation on the raw DataFrame
 #     imputed_df = impute_missing_data(df, 'moving_average')
 #     print("\nAfter imputation (raw data):")
 #     print(imputed_df.head(20))
-#
-#     # Normalize data after imputation
 #     normalized_df = normalize_data(imputed_df)
 #     print("\nAfter normalization:")
 #     print(normalized_df.head(20))
