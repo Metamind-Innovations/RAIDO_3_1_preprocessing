@@ -78,7 +78,7 @@ def impute_missing_data(df: pd.DataFrame, method: str):
         elif method == 'linear_regression':
             df_copy = df.copy()
             df_copy['time_numeric'] = (
-                    pd.to_datetime(df_copy['time']) - pd.to_datetime(df_copy['time']).min()).dt.total_seconds()
+                    pd.to_datetime(df_copy.iloc[:, 0]) - pd.to_datetime(df_copy.iloc[:, 0]).min()).dt.total_seconds()
             train_idx = df_copy[column].notna()
 
             X_train = df_copy.loc[train_idx, 'time_numeric'].values.reshape(-1, 1)
