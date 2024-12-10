@@ -7,7 +7,6 @@ from fastapi import APIRouter, File, Query, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
 from matplotlib import pyplot as plt
-import matplotlib.gridspec as gridspec
 import numpy as np
 
 from api.models import ImageTransformation
