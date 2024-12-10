@@ -57,3 +57,18 @@ def detect_outliers_endpoint(
         return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
     finally:
         csv.file.close()
+
+@router.post("/noise_removal")
+def noise_removal_endpoint(
+        csv: UploadFile = File(description="The csv to remove noise"),
+):
+    try:
+        # Read csv with proper parsing of dates and separator
+        df = pd.read_csv(csv.file, sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
+        from src.time_series.noise import remove_noise
+        denoised_df = remove_noise(df)
+        return denoised_df.to_dict(orient='records')
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
