@@ -28,7 +28,7 @@ class ImputationNameTimeseries(str, Enum):
     linear_regression = "linear_regression"
 
 class OutlierNameTimeseries(str, Enum):
-    both = 'both'
+    all = 'all'
     single = 'single'
 
 

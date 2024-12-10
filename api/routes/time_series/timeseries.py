@@ -45,13 +45,13 @@ def impute_missing_data_endpoint(csv: UploadFile = File(description="The csv to 
 @router.post("/outliers/detect")
 def detect_outliers_endpoint(
         csv: UploadFile = File(description="The csv to check for outliers"),
-        method: OutlierNameTimeseries = Query(..., description="The method to use for outlier detection"),
+        method: OutlierNameTimeseries = Query(OutlierNameTimeseries.all, description="The method to use for outlier detection"),
+        voting_threshold: int = Query(2, description="The minimum number of outlier detection methods that must detect an outlier for it to be considered as an outlier."),
 ):
     try:
         # Read csv with proper parsing of dates and separator
         df = pd.read_csv(csv.file, sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
-        print(df)
-        outliers_df = detect_outliers(df, method)
+        outliers_df = detect_outliers(df, method, voting_threshold=voting_threshold)
         return outliers_df.to_dict(orient='records')
     except Exception as e:
         return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
