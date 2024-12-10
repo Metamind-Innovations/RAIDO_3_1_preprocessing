@@ -1,3 +1,9 @@
+"""
+Main FastAPI application module for the RAIDO Data Preprocessing API.
+Routes are organized into logical groups based on functionality and data type (images vs time series).
+"""
+
+
 from fastapi import FastAPI
 import uvicorn
 
