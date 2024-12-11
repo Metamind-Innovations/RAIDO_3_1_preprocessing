@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import List, Tuple
+from extendableenum import inheritable_enum
 
 from pydantic import BaseModel
 
@@ -14,18 +15,25 @@ class MissingPixels(BaseModel):
     }
 
 
+@inheritable_enum
 class ImputationName(str, Enum):
     mean = "mean"
     median = "median"
 
 
-class ImputationNameTimeseries(str, Enum):
+class ImputationNameTimeseries(ImputationName):
     fill = 'fill'
-    mean = "mean"
-    median = "median"
     most_frequent = "most_frequent"
     moving_average = 'moving_average'
     linear_regression = "linear_regression"
+
+
+class NoiseRemovalMethod(str, Enum):
+    ema = 'ema'
+    fourier = 'fourier_transform'
+    savitzky = 'savitzky_golay'
+    wavelet = 'wavelet_denoising'
+
 
 class OutlierNameTimeseries(str, Enum):
     all = 'all'
