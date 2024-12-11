@@ -3,7 +3,7 @@ from fastapi import APIRouter, UploadFile, File, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from api.models import ImputationNameTimeseries
+from api.models import ImputationNameTimeseries, NoiseRemovalMethod
 from src.time_series.ts_missing_data import (
     normalize_data,
     impute_missing_data,
@@ -13,6 +13,13 @@ from src.time_series.ts_missing_data import (
 from api.models import OutlierNameTimeseries
 from src.time_series.ts_outliers import (
     detect_outliers
+)
+
+from src.time_series.noise import (
+    ema,
+    fourier_transform,
+    savitzky_golay,
+    wavelet_denoising
 )
 
 router = APIRouter(prefix="/time_series", tags=["Time Series"])
@@ -45,8 +52,10 @@ def impute_missing_data_endpoint(csv: UploadFile = File(description="The csv to 
 @router.post("/outliers/detect")
 def detect_outliers_endpoint(
         csv: UploadFile = File(description="The csv to check for outliers"),
-        method: OutlierNameTimeseries = Query(OutlierNameTimeseries.all, description="The method to use for outlier detection"),
-        voting_threshold: int = Query(2, description="The minimum number of outlier detection methods that must detect an outlier for it to be considered as an outlier."),
+        method: OutlierNameTimeseries = Query(OutlierNameTimeseries.all,
+                                              description="The method to use for outlier detection"),
+        voting_threshold: int = Query(2,
+                                      description="The minimum number of outlier detection methods that must detect an outlier for it to be considered as an outlier."),
 ):
     try:
         # Read csv with proper parsing of dates and separator
@@ -58,16 +67,25 @@ def detect_outliers_endpoint(
     finally:
         csv.file.close()
 
+
 @router.post("/noise_removal")
 def noise_removal_endpoint(
         csv: UploadFile = File(description="The csv to remove noise"),
+        method: NoiseRemovalMethod = Query(
+            ...,
+            description="Method used for noise removal. Possible values: 'ema', 'fourier', 'savitzky', 'wavelet'"
+        ),
 ):
     try:
-        # Read csv with proper parsing of dates and separator
-        df = pd.read_csv(csv.file, sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
-        from src.time_series.noise import remove_noise
-        denoised_df = remove_noise(df)
-        return denoised_df.to_dict(orient='records')
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        denoising_methods = {
+            NoiseRemovalMethod.ema: ema,
+            NoiseRemovalMethod.fourier: fourier_transform,
+            NoiseRemovalMethod.savitzky: savitzky_golay,
+            NoiseRemovalMethod.wavelet: wavelet_denoising,
+        }
+        denoised_df = denoising_methods[method](df)
+        return denoised_df.to_dict(orient="records")
     except Exception as e:
         return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
     finally:

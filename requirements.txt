@@ -1,4 +1,5 @@
 albumentations
+extendable_enum
 fastapi
 imbalanced_learn
 matplotlib
