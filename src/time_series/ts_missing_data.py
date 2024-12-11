@@ -8,9 +8,16 @@ from sklearn.linear_model import LinearRegression
 
 def normalize_data(dataframe: pd.DataFrame) -> pd.DataFrame:
     """
-    Normalizes the given dataframe across all columns.
-    :param dataframe: The dataframe to normalize.
-    :return: The normalized dataframe.
+    Normalize the numeric columns of a DataFrame using Min-Max scaling.
+
+    This function scales each numeric column (except the first one, assumed to be non-numeric)
+    in the provided DataFrame to a range between 0 and 1. It replaces zero and empty string
+    values with NaN before normalizing.
+
+    :param dataframe: The DataFrame containing the data to be normalized.
+    :type dataframe: pd.DataFrame
+    :return: A DataFrame with normalized numeric columns.
+    :rtype: pd.DataFrame
     """
     scaler = MinMaxScaler(feature_range=(0, 1))
     normalized_df = dataframe.copy()
@@ -22,6 +29,11 @@ def normalize_data(dataframe: pd.DataFrame) -> pd.DataFrame:
 
 
 def cleanup_df_zero_nans(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Clean up a DataFrame by dropping rows with all nans or all 0s and replace 0s and '' with nan.
+    :param df: The DataFrame to clean up.
+    :return: The cleaned DataFrame.
+    """
     # Convert 0s and '' to nan
     cleaned_df = df.copy()
     for column in cleaned_df.columns[1:]:
@@ -36,24 +48,26 @@ def cleanup_df_zero_nans(df: pd.DataFrame) -> pd.DataFrame:
 # TODO: Add different imputation per column
 def impute_missing_data(df: pd.DataFrame, method: str):
     """
-    Imputes missing values in a given dataframe using one of the following methods.
+    Impute missing data in a DataFrame using various methods.
 
-    Parameters
-    ----------
-    df: pd.DataFrame
-        The dataframe to impute missing values.
-    method: str
-        The method to use for imputation. Choices are:
-        'fill', 'mean', 'median', 'most_frequent', 'moving_average' and 'linear_regression'.
+    :param df: The DataFrame containing missing data to be imputed.
+    :type df: pd.DataFrame
+    :param method: The imputation method to use. Supported methods are:
+                   'fill', 'mean', 'median', 'most_frequent',
+                   'moving_average', 'linear_regression'.
+    :type method: str
+    :return: The DataFrame with missing data imputed.
+    :rtype: pd.DataFrame
 
-    Returns
-    -------
-    pd.DataFrame
-        The dataframe with missing values imputed.
+    - 'fill': Forward and backward fill to impute missing values.
+    - 'mean': Impute missing values using the mean of the column.
+    - 'median': Impute missing values using the median of the column.
+    - 'most_frequent': Impute missing values using the most frequent value of the column.
+    - 'moving_average': Impute missing values using a moving average with a window size of 3.
+    - 'linear_regression': Impute missing values using linear regression based on time.
 
-    Notes
-    -----
-    For 'linear_regression', the time column must be in datetime format.
+    Note:
+        The first column is assumed to be a datetime column used for linear regression.
     """
     if method == 'fill':
         df = df.ffill().bfill()
