@@ -27,7 +27,7 @@ def extract_date_features(df: pd.DataFrame) -> pd.DataFrame:
     return df_copy
 
 
-def calculate_differences(df: pd.DataFrame, column: str) -> pd.DataFrame:
+def calculate_differences(df: pd.DataFrame, column: str = 'value', order: int = 1) -> pd.DataFrame:
     """
     Calculate the first and second order differences for the given column.
 
@@ -35,16 +35,20 @@ def calculate_differences(df: pd.DataFrame, column: str) -> pd.DataFrame:
     :type df: pd.DataFrame
     :param column: The name of the column.
     :type column: str
+    :param order: The order of the differences. 1 for first order, 2 for second order.
+    :type order: int
     :return: The DataFrame with the new features added.
     :rtype: pd.DataFrame
     """
     df_copy = df.copy()
-    df_copy[f'{column}_diff_1'] = df_copy[column].diff()
-    df_copy[f'{column}_diff_2'] = df_copy[f'{column}_diff_1'].diff()
+
+    # fillna used to handle nan values in order to be jsonable later
+    for i in range(1, order + 1):
+        df_copy[f'{column}_diff_{i}'] = df_copy[column].diff(i).fillna(0)
     return df_copy
 
 
-def one_hot_encode_categoricals(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
+def one_hot_encode_categoricals(df: pd.DataFrame, columns: List[str] = ['value']) -> pd.DataFrame:
     """
     One-hot encode the given columns.
 
@@ -64,12 +68,12 @@ def one_hot_encode_categoricals(df: pd.DataFrame, columns: List[str]) -> pd.Data
     return df_copy
 
 
-df = pd.read_csv('power_small.csv', sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
-date_features = extract_date_features(df)
-print(f'Date Features: {date_features.head(20)}')
-
-differences = calculate_differences(df, 'value')
-print(f'Differences: {differences.head(20)}')
-
-one_hot = one_hot_encode_categoricals(df, ['value'])
-print(f'one_hot: {one_hot.head(20)}')
+# df = pd.read_csv('power_small.csv', sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
+# date_features = extract_date_features(df)
+# print(f'Date Features: {date_features.head(20)}')
+#
+# differences = calculate_differences(df)
+# print(f'Differences: {differences.head(20)}')
+#
+# one_hot = one_hot_encode_categoricals(df)
+# print(f'one_hot: {one_hot.head(20)}')
