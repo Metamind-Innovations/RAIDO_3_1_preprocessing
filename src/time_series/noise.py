@@ -4,34 +4,37 @@ import pandas as pd
 
 def ema(df: pd.DataFrame, alpha: float = 0.2) -> pd.DataFrame:
     """
-    This function will remove the noise from a given dataframe by implementing the exponential moving average algorithm.
+    Calculate the Exponential Moving Average (EMA) for each column in the DataFrame,
+    except the first one which is assumed to be a datetime column.
 
-    Parameters:
-    df (pd.DataFrame): The dataframe to remove the noise from.
-    alpha (float): The smoothing factor. Default value is 0.2.
-
-    Returns:
-    pd.DataFrame: The dataframe with new columns added to the right of the existing ones containing the exponential moving average values.
+    :param df: The DataFrame containing the data for which the EMA should be calculated.
+    :type df: pd.DataFrame
+    :param alpha: The smoothing factor, a value between 0 and 1. Default is 0.2.
+    :type alpha: float, optional
+    :return: A DataFrame with the original data and additional columns for each EMA calculated.
+    :rtype: pd.DataFrame
     """
     df_copy = df.copy()
     for column in df_copy.columns[1:]:
         df_copy[f'{column}_ema'] = df_copy[column].ewm(alpha=alpha).mean()
     return df_copy
 
+
 def fourier_transform(df: pd.DataFrame) -> pd.DataFrame:
     """
-    This function will calculate the fourier transform for all columns in a given dataframe except the first one.
+    Calculate the Fast Fourier Transform (FFT) for each column in the DataFrame,
+    except the first one which is assumed to be a datetime column.
 
-    Parameters:
-    df (pd.DataFrame): The dataframe to calculate the fourier transform for.
-
-    Returns:
-    pd.DataFrame: The dataframe with new columns added to the right of the existing ones containing the fourier transform values.
+    :param df: The DataFrame containing the data for which the FFT should be calculated.
+    :type df: pd.DataFrame
+    :return: A DataFrame with the original data and additional columns for each FFT calculated.
+    :rtype: pd.DataFrame
     """
     df_copy = df.copy()
     for column in df_copy.columns[1:]:
         df_copy[f'{column}_fourier'] = np.abs(np.fft.rfft(df_copy[column]))
     return df_copy
+
 
 df = pd.read_csv('power_small.csv', sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
 noise_removed = ema(df)
