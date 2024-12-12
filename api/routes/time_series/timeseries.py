@@ -1,5 +1,5 @@
+import json
 from typing import List
-
 import pandas as pd
 from fastapi import APIRouter, UploadFile, File, Query
 from fastapi.encoders import jsonable_encoder
@@ -19,6 +19,9 @@ from src.time_series.noise import ema, fourier_transform, savitzky_golay, wavele
 # Feature Engineering
 from src.time_series.feature_engineering import extract_date_features, calculate_differences, \
     one_hot_encode_categoricals
+
+# Dim Reduction
+from src.time_series.dim_reduction import pca_dim_reduction, diffusion_maps, autoencoder_reduction, pvqa
 
 router = APIRouter(prefix="/time_series", tags=["Time Series"])
 
@@ -133,6 +136,142 @@ def feature_engineering_one_hot_endpoint(
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
         engineered_df = one_hot_encode_categoricals(df, list_columns)
         return engineered_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/dimensionality_reduction/pca")
+def dimensionality_reduction_pca_endpoint(
+        csv: UploadFile = File(description="The csv to perform PCA on"),
+        n_components: int = Query(default=2, description="The number of components to keep"),
+) -> JSONResponse:
+    """
+    Apply Principal Component Analysis (PCA) to a given dataset of time series data.
+
+    Parameters
+    ----------
+    csv : UploadFile
+        The csv to perform PCA on.
+    n_components : int
+        The number of components to keep.
+
+    Returns
+    -------
+    JSONResponse
+        A JSON response containing the reduced data.
+    """
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        reduced_df = pca_dim_reduction(df, n_components)
+        return jsonable_encoder(reduced_df.tolist())
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/dimensionality_reduction/isomap")
+def dimensionality_reduction_isomap_endpoint(
+        csv: UploadFile = File(description="The csv to perform Isomap on"),
+        n_components: int = Query(default=1, description="The number of components to keep"),
+        n_neighbors: int = Query(default=10, description="The number of neighbors to consider"),
+) -> JSONResponse:
+    """
+    Apply Isomap to a given dataset of time series data.
+
+    Parameters
+    ----------
+    csv : UploadFile
+        The csv to perform Isomap on.
+    n_components : int
+        The number of components to keep.
+    n_neighbors : int
+        The number of neighbors to consider.
+
+    Returns
+    -------
+    JSONResponse
+        A JSON response containing the reduced data.
+    """
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        reduced_df = diffusion_maps(df, n_components, n_neighbors)
+        return jsonable_encoder(reduced_df.tolist())
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/dimensionality_reduction/pvqa")
+def dimensionality_reduction_pvqa_endpoint(
+        csv: UploadFile = File(description="The csv to perform PVQA on"),
+        num_segments: int = Query(default=10, description="The number of segments to divide the data into"),
+) -> JSONResponse:
+    """
+    Apply PVQA (Piecewise Vector Quantized Approximation) to a given dataset of time series data.
+
+    Parameters
+    ----------
+    csv : UploadFile
+        The csv to perform PVQA on.
+    num_segments : int
+        The number of segments to divide the data into.
+
+    Returns
+    -------
+    JSONResponse
+        A JSON response containing the reduced data.
+
+    Notes
+    -----
+    PVQA is a technique for reducing the dimensionality of time series data. It works by dividing the data into segments and then applying Vector Quantization to each segment. The result is a lossy compression of the data.
+    """
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        reduced_df = pvqa(df, num_segments)
+
+        # pvqa returns a list, so we can directly use it
+        result = reduced_df
+
+        # Use jsonable_encoder to ensure the result is JSON serializable
+        json_compatible_result = jsonable_encoder(result)
+
+        return JSONResponse(content={"data": json_compatible_result})
+    except pd.errors.EmptyDataError:
+        return JSONResponse(status_code=400, content={"message": "The CSV file is empty."})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": f"An error occurred: {str(e)}"})
+    finally:
+        csv.file.close()
+
+
+@router.post("/dimensionality_reduction/autoencoder")
+def dimensionality_reduction_autoencoder_endpoint(
+        csv: UploadFile = File(description="The csv to perform autoencoder on"),
+        n_lag: int = Query(default=2, description="The number of components to keep"),
+) -> JSONResponse:
+    """
+    Apply Autoencoder-based dimensionality reduction to a given dataset of time series data.
+
+    Parameters
+    ----------
+    csv : UploadFile
+        The csv to perform autoencoder on.
+    n_lag : int
+        The number of lagged features to create.
+
+    Returns
+    -------
+    JSONResponse
+        A JSON response containing the reduced data.
+    """
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        reduced_df = autoencoder_reduction(df, n_lag)
+        return JSONResponse(content=json.dumps(reduced_df.tolist()), media_type="application/json")
     except Exception as e:
         return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
     finally:
