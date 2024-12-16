@@ -22,6 +22,9 @@ from src.time_series.feature_engineering import extract_date_features, calculate
 # Dim Reduction
 from src.time_series.dim_reduction import pca_dim_reduction, isometric_mapping, autoencoder_reduction, pvqa
 
+# Balancing
+from src.time_series.balancing import upsampling, downsampling, rolling_window
+
 router = APIRouter(prefix="/time_series", tags=["Time Series"])
 
 
@@ -237,6 +240,56 @@ def dimensionality_reduction_autoencoder_endpoint(
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
         reduced_df = autoencoder_reduction(df, column, n_lag)
         return reduced_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+# TODO: This works in prototype but not in FastAPI. The endpoint hangs.
+@router.post("/balancing/upsample")
+def balancing_upsample_endpoint(
+        csv: UploadFile = File(description="The csv to upsample"),
+        target_frequency: str = Query(default='min', description="The target frequency for upsampling"),
+):
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        upsampled_df = upsampling(df, target_frequency)
+        return upsampled_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/balancing/downsample")
+def balancing_downsample_endpoint(
+        csv: UploadFile = File(description="The csv to downsample"),
+        target_frequency: str = Query(default='h', description="The target frequency for downsampling"),
+):
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        downsampled_df = downsampling(df, target_frequency)
+        return downsampled_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/balancing/rolling_window")
+def balancing_rolling_window_endpoint(
+        csv: UploadFile = File(description="The csv to apply the rolling window"),
+        window_size: int = Query(default=2, description="The size of the rolling window"),
+        target_columns: List[str] = Query(default=None, description="List of column names to apply rolling window"),
+        aggregation_method: str = Query(default='mean',
+                                        description="Method to aggregate values ('mean', 'sum', 'std', 'min', 'max')"),
+        min_periods: int = Query(default=1, description="Minimum number of observations required for calculation"),
+):
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        rolled_df = rolling_window(df, window_size, target_columns, aggregation_method, min_periods)
+        return rolled_df.to_dict(orient="records")
     except Exception as e:
         return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
     finally:

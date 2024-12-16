@@ -3,23 +3,16 @@ import pandas as pd
 
 def upsampling(df: pd.DataFrame, target_frequency: str = 'min') -> pd.DataFrame:
     """
-    Upsample the dataset to a specified frequency using linear interpolation.
+    Upsample the dataset to a specified frequency using mean aggregation and interpolation.
 
     :param df: The DataFrame containing the time series data.
     :type df: pd.DataFrame
     :param target_frequency: The target frequency for upsampling. Default is 'min' (minute).
-        Possible values are:
-        - 's': second
-        - 't': minute
-        - 'h': hour
-        - 'd': day
-        - 'm': month
-        - 'y': year
     :type target_frequency: str, optional
     :return: The upsampled DataFrame.
     :rtype: pd.DataFrame
     """
-    df_upsampled = df.set_index(df.columns[0]).resample(target_frequency).interpolate('linear').reset_index()
+    df_upsampled = df.set_index(df.columns[0]).resample(target_frequency).mean().interpolate().dropna().reset_index()
     return df_upsampled
 
 
@@ -30,19 +23,13 @@ def downsampling(df: pd.DataFrame, target_frequency: str = 'h') -> pd.DataFrame:
     :param df: The DataFrame containing the time series data.
     :type df: pd.DataFrame
     :param target_frequency: The target frequency for downsampling. Default is 'h' (hour).
-        Possible values are:
-        - 's': second
-        - 't': minute
-        - 'h': hour
-        - 'd': day
-        - 'm': month
-        - 'y': year
     :type target_frequency: str, optional
     :return: The downsampled DataFrame.
     :rtype: pd.DataFrame
     """
     df_downsampled = df.set_index(df.columns[0]).resample(target_frequency).mean().dropna().reset_index()
     return df_downsampled
+
 
 # TODO: Add SMOTE for classification problems
 
@@ -116,20 +103,19 @@ def rolling_window(
 
 
 # if __name__ == "__main__":
-    # df = pd.read_csv('power_small.csv', sep=';', parse_dates=[0], dayfirst=True)
-    #
-    # print(df.head(30))
-    # # Upsample
-    # df_upsampled = upsampling(df)
-    # print("Upsampled DataFrame:")
-    # print(df_upsampled.head(30))
-    #
-    # # Downsample
-    # df_downsampled = downsampling(df)
-    # print("Downsampled DataFrame:")
-    # print(df_downsampled.head(30))
-    #
-    # # Rolling Window
-    # df_rolling = rolling_window(df)
-    # print("Rolling Window DataFrame:")
-    # print(df_rolling.head(30))
+#     df = pd.read_csv('power_small.csv', sep=';', parse_dates=[0], dayfirst=True)
+#     #
+#     # Upsample
+#     df_upsampled = upsampling(df)
+#     print("Upsampled DataFrame:")
+#     print(df_upsampled.head(30))
+#
+#     # Downsample
+#     df_downsampled = downsampling(df)
+#     print("Downsampled DataFrame:")
+#     print(df_downsampled.head(30))
+#
+#     # Rolling Window
+#     df_rolling = rolling_window(df)
+#     print("Rolling Window DataFrame:")
+#     print(df_rolling.head(30))
