@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from statsmodels.tsa.seasonal import seasonal_decompose
-from sklearn.preprocessing import StandardScaler, PolynomialFeatures
+from sklearn.preprocessing import StandardScaler, PolynomialFeatures, MinMaxScaler
 from sklearn.ensemble import IsolationForest
 
 
@@ -182,6 +182,22 @@ def add_cyclical_features(df, column, period):
     """
     df[f'{column}_sin'] = np.sin(2 * np.pi * df[column] / period)
     df[f'{column}_cos'] = np.cos(2 * np.pi * df[column] / period)
+    return df
+
+
+def standardize_data(df, column='value'):
+    """
+    Standardize the DataFrame the StandardScaler.
+
+    :param df: The DataFrame containing the time series data.
+    :type df: pd.DataFrame
+    :param column: The name of the column to standardize.
+    :type column: str, optional
+    :return: DataFrame standardized using Z-score normalization.
+    :rtype: pd.DataFrame
+    """
+    scaler = StandardScaler()
+    df[f'standardized_{column}'] = scaler.fit_transform(df[[column]])
     return df
 
 

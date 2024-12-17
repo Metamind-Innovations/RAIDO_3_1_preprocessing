@@ -28,7 +28,7 @@ from src.time_series.balancing import upsampling, downsampling, rolling_window
 
 # Enrichment
 from src.time_series.enrichment import enrich_with_statistics, enrich_with_temporal_features, \
-    enrich_with_anomaly_detection, add_polynomial_features, add_log_features, add_cyclical_features
+    enrich_with_anomaly_detection, add_polynomial_features, add_log_features, add_cyclical_features, standardize_data
 
 router = APIRouter(prefix="/time_series", tags=["Time Series"])
 
@@ -401,6 +401,21 @@ def enrichment_cyclical_features_endpoint(
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
         enriched_df = add_cyclical_features(df, column, period)
         return enriched_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/standardize_data")
+def standardize_data_endpoint(
+        csv: UploadFile = File(description="The csv to standardize"),
+        column: str = Query(default="value", description="The column to standardize")
+):
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        standardized_df = standardize_data(df, column)
+        return standardized_df.to_dict(orient="records")
     except Exception as e:
         return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
     finally:
