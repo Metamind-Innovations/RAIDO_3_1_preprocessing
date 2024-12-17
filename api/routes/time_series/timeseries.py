@@ -1,4 +1,5 @@
 from typing import List
+import numpy as np
 import pandas as pd
 from fastapi import APIRouter, UploadFile, File, Query
 from fastapi.encoders import jsonable_encoder
@@ -24,6 +25,10 @@ from src.time_series.dim_reduction import pca_dim_reduction, isometric_mapping, 
 
 # Balancing
 from src.time_series.balancing import upsampling, downsampling, rolling_window
+
+# Enrichment
+from src.time_series.enrichment import enrich_with_statistics, enrich_with_temporal_features, \
+    enrich_with_anomaly_detection, add_polynomial_features, add_log_features, add_cyclical_features
 
 router = APIRouter(prefix="/time_series", tags=["Time Series"])
 
@@ -290,6 +295,112 @@ def balancing_rolling_window_endpoint(
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
         rolled_df = rolling_window(df, window_size, target_columns, aggregation_method, min_periods)
         return rolled_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/enrichment/statistics")
+def enrichment_statistics_endpoint(
+        csv: UploadFile = File(description="The csv to enrich with statistics"),
+        column: str = Query(default="value", description="The column to calculate statistics for"),
+        window_sizes: List[int] = Query(default=[5],
+                                        description="List of window sizes for rolling calculations"),
+        quantiles: List[float] = Query(default=[0.25],
+                                       description="List of quantiles to calculate for each window size")
+):
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True)
+        enriched_df = enrich_with_statistics(df, column, window_sizes, quantiles)
+        enriched_df = enriched_df.where(pd.notnull(enriched_df), 0)
+        return enriched_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": f"Error: {str(e)}"})
+    finally:
+        csv.file.close()
+
+
+@router.post("/enrichment/temporal_features")
+def enrichment_temporal_features_endpoint(
+        csv: UploadFile = File(description="The csv to enrich with temporal features"),
+        column: str = Query(default="value", description="The column to calculate temporal features for")
+):
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        enriched_df = enrich_with_temporal_features(df, column)
+        enriched_df = enriched_df.where(pd.notnull(enriched_df), 0)
+        return enriched_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/enrichment/anomaly_detection")
+def enrichment_anomaly_detection_endpoint(
+        csv: UploadFile = File(description="The csv to enrich with anomaly detection"),
+        column: str = Query(default="value", description="The column to detect anomalies in"),
+        contamination: float = Query(default=0.01,
+                                     description="The proportion of anomalies in the data for isolation forest")
+):
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        enriched_df = enrich_with_anomaly_detection(df, column, contamination)
+        enriched_df = enriched_df.replace([np.inf, -np.inf], np.nan)
+        enriched_df = enriched_df.where(pd.notnull(enriched_df), 0)
+        return enriched_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/enrichment/polynomial_features")
+def enrichment_polynomial_features_endpoint(
+        csv: UploadFile = File(description="The csv to enrich with polynomial features"),
+        column: str = Query(default="value", description="The column to create polynomial features for"),
+        degree: int = Query(default=2, description="The degree of the polynomial features")
+):
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        enriched_df = add_polynomial_features(df, column, degree)
+        enriched_df = enriched_df.where(pd.notnull(enriched_df), 0)
+        return enriched_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/enrichment/log_features")
+def enrichment_log_features_endpoint(
+        csv: UploadFile = File(description="The csv to enrich with log features"),
+        column: str = Query(default="value", description="The column to create log features for")
+):
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        enriched_df = add_log_features(df, column)
+        # Remove inf values
+        enriched_df = enriched_df.replace([np.inf, -np.inf], np.nan)
+        enriched_df = enriched_df.where(pd.notnull(enriched_df), 0)
+        return enriched_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/enrichment/cyclical_features")
+def enrichment_cyclical_features_endpoint(
+        csv: UploadFile = File(description="The csv to enrich with cyclical features"),
+        column: str = Query(default="value", description="The column to create cyclical features for"),
+        period: int = Query(default=24, description="The period for the cyclical features")
+):
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        enriched_df = add_cyclical_features(df, column, period)
+        return enriched_df.to_dict(orient="records")
     except Exception as e:
         return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
     finally:
