@@ -1,5 +1,7 @@
+import numpy as np
 import pandas as pd
 from scipy.signal import find_peaks
+from sklearn.cluster import KMeans
 
 
 def top_k_distillation(df, column, k=10):
@@ -87,6 +89,49 @@ def peak_detection_distillation(df, column, height=10000, distance=5):
     return peak_df
 
 
+def step_distill(df, feedback_steps=5):
+    """
+    Implement DynaDistill method for dataset distillation.
+    :param df: The input DataFrame containing time series data.
+    :type df: pd.DataFrame
+    :param column: The column to distill.
+    :type column: str
+    :param feedback_steps: Number of feedback steps, defaults to 5.
+    :type feedback_steps: int, optional
+    :return: A DataFrame containing distilled data.
+    :rtype: pd.DataFrame
+    """
+    # Select every nth point as a simple feedback mechanism
+    distilled_df = df.iloc[::feedback_steps].reset_index(drop=True)
+    return distilled_df
+
+
+def clustering_based_distillation(df, column, n_clusters=10):
+    """
+    Implement a clustering-based distillation method for time series data.
+    :param df: The input DataFrame containing time series data.
+    :type df: pd.DataFrame
+    :param column: The column to distill.
+    :type column: str
+    :param n_clusters: Number of clusters to form, defaults to 5.
+    :type n_clusters: int, optional
+    :return: A DataFrame containing the cluster centroids.
+    :rtype: pd.DataFrame
+    """
+    # Reshape the data for clustering
+    data = df[column].values.reshape(-1, 1)
+    # Apply KMeans clustering
+    kmeans = KMeans(n_clusters=n_clusters)
+    kmeans.fit(data)
+    # Get the cluster labels
+    labels = kmeans.labels_
+    # Get the cluster centroids
+    centroids = kmeans.cluster_centers_.flatten()
+    # Create a new DataFrame with the centroids
+    df[f'{column}_centroid'] = [centroids[label] for label in labels]
+
+    return df
+
 # df = pd.read_csv('power_small.csv', sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
 # top_k_df = top_k_distillation(df, k=10)
 # print(top_k_df)
@@ -106,3 +151,11 @@ def peak_detection_distillation(df, column, height=10000, distance=5):
 # df = pd.read_csv('power_small.csv', sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
 # peak_df = peak_detection_distillation(df, height=10000, distance=5)
 # print(peak_df)
+
+# df = pd.read_csv('power_small.csv', sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
+# distilled_df = step_distill(df, feedback_steps=5)
+# print(distilled_df)
+
+# df = pd.read_csv('power_small.csv', sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
+# centroids_df = clustering_based_distillation(df, 'value')
+# print(centroids_df.head(50))

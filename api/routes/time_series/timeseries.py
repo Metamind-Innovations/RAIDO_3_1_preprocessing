@@ -32,7 +32,8 @@ from src.time_series.enrichment import enrich_with_statistics, enrich_with_tempo
 
 # Distillation
 from src.time_series.distillation import threshold_based_distillation, tf_based_median_distillation, \
-    percentile_based_distillation, peak_detection_distillation, top_k_distillation
+    percentile_based_distillation, peak_detection_distillation, top_k_distillation, step_distill, \
+    clustering_based_distillation
 
 router = APIRouter(prefix="/time_series", tags=["Time Series"])
 
@@ -502,6 +503,37 @@ def distillation_peak_detection_endpoint(
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
         distilled_df = peak_detection_distillation(df, column, height, distance)
+        return distilled_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/distillation/step")
+def distillation_step_endpoint(
+        csv: UploadFile = File(description="The csv to apply step distillation"),
+        feedback_steps: int = Query(default=5, description="The number of feedback steps")
+):
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        distilled_df = step_distill(df, feedback_steps)
+        return distilled_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/distillation/clustering")
+def distillation_clustering_endpoint(
+        csv: UploadFile = File(description="The csv to apply clustering-based distillation"),
+        column: str = Query(default="value", description="The column to distill"),
+        n_clusters: int = Query(default=10, description="The number of clusters to form")
+):
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        distilled_df = clustering_based_distillation(df, column, n_clusters)
         return distilled_df.to_dict(orient="records")
     except Exception as e:
         return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
