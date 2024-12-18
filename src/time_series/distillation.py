@@ -1,270 +1,106 @@
-import numpy as np
 import pandas as pd
-import torch
-from sklearn.preprocessing import MinMaxScaler
-from torch import nn, optim
+from scipy.signal import find_peaks
 
 
-# # # RCIG distillation implementation # # #
-
-# --------- START --------- #
-
-def prepare_data(csv_file):
+def top_k_distillation(df, k=5):
     """
-    Prepare the data from a CSV file.
+    Select the top-K highest values from the dataset.
 
-    This function reads the CSV file and converts the first column to a timestamp
-    in seconds. It then returns the prepared data.
-
-    :param csv_file: The path to the CSV file.
-    :type csv_file: str
-    :return: A tuple containing the reshaped timestamp values and the corresponding column values.
-    :rtype: tuple
+    :param df: The input DataFrame containing time series data.
+    :type df: pd.DataFrame
+    :param k: The number of top values to select, defaults to 5.
+    :type k: int, optional
+    :return: A DataFrame containing the top-K highest values.
+    :rtype: pd.DataFrame
     """
-    df = pd.read_csv(csv_file, sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
-    df['timestamp'] = df[df.columns[0]].astype(int) / 10 ** 9
-    prepared_data = df[['timestamp', df.columns[1]]].values.astype(float)
-    return prepared_data[:, 0].reshape(-1, 1), prepared_data[:, 1]
+    top_k_df = df.nlargest(k, 'value').sort_values('time').reset_index(drop=True)
+    return top_k_df
 
 
-def rcig_distillation(X, y, distilled_size=100, steps=100):
+def threshold_based_distillation(df, threshold=10000):
     """
-    Perform RCIG distillation on the given data.
+    Retain only the values that are above a certain threshold.
 
-    This function initializes a synthetic dataset, trains a model using CrossEntropyLoss,
-    and returns the distilled data.
-
-    :param X: Input features.
-    :type X: torch.Tensor
-    :param y: Target values.
-    :type y: numpy.ndarray
-    :param distilled_size: The size of the distilled dataset, defaults to 100.
-    :type distilled_size: int, optional
-    :param steps: The number of training steps, defaults to 100.
-    :type steps: int, optional
-    :return: A tuple containing the distilled input features and target values.
-    :rtype: tuple
+    :param df: The input DataFrame containing time series data.
+    :type df: pd.DataFrame
+    :param threshold: The value threshold, defaults to 10000.
+    :type threshold: int, optional
+    :return: A DataFrame containing values above the threshold.
+    :rtype: pd.DataFrame
     """
-    X, y = prepare_data('power_small.csv')
-    input_dim = X.shape[1]
-    unique_classes = torch.unique(torch.tensor(y))
-    output_dim = len(unique_classes)
-
-    # Map original target values to class indices
-    class_to_index = {cls.item(): idx for idx, cls in enumerate(unique_classes)}
-    y_mapped = torch.tensor([class_to_index[val] for val in y], dtype=torch.long)
-
-    # Initialize synthetic dataset.
-    distilled_X = torch.randn(distilled_size, input_dim, requires_grad=True)
-    distilled_y = y_mapped[:distilled_size]  # Ensure using mapped target values
-
-    model = torch.nn.Linear(input_dim, output_dim)
-    optimizer = torch.optim.Adam([distilled_X], lr=0.01)
-    criterion = torch.nn.CrossEntropyLoss()  # Use CrossEntropyLoss for classification
-
-    for step in range(steps):
-        optimizer.zero_grad()
-        outputs = model(distilled_X)
-        loss = criterion(outputs, distilled_y)  # No need to squeeze or change dtype
-        loss.backward()
-        optimizer.step()
-
-    return distilled_X.detach().numpy(), distilled_y.detach().numpy()
+    threshold_df = df[df['value'] > threshold].reset_index(drop=True)
+    return threshold_df
 
 
-# --------- END --------- #
-
-
-# # # RaT-BPTT distillation implementation # # #
-
-# --------- START --------- #
-
-# Define an RNN model for time series forecasting
-class RNNModel(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
-        super(RNNModel, self).__init__()
-        self.rnn = nn.RNN(input_size, hidden_size, batch_first=True)
-        self.fc = nn.Linear(hidden_size, output_size)
-
-    def forward(self, x):
-        out, _ = self.rnn(x)
-        out = self.fc(out[:, -1, :])  # Use the last time step's output
-        return out
-
-
-def load_and_preprocess_data(file_path, column='value'):
+def daily_median_distillation(df):
     """
-    Load and preprocess the data from a CSV file.
+    Compute the median value for each day in the dataset.
 
-    This function reads the CSV file, parses the dates, normalizes the specified column,
-    and returns the DataFrame along with the scaler used for normalization.
-
-    :param file_path: The path to the CSV file.
-    :type file_path: str
-    :param column: The column to normalize, defaults to 'value'.
-    :type column: str, optional
-    :return: A tuple containing the DataFrame and the scaler used for normalization.
-    :rtype: tuple
+    :param df: The input DataFrame containing time series data.
+    :type df: pd.DataFrame
+    :return: A DataFrame containing the daily median values.
+    :rtype: pd.DataFrame
     """
-    df = pd.read_csv(file_path, sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
-    df[df.columns[0]] = pd.to_datetime(df[df.columns[0]], format='%d/%m/%Y %H:%M')
-    df = df.sort_values(df.columns[0])
-    scaler = MinMaxScaler()
-    df[f'{column}_normalized'] = scaler.fit_transform(df[[column]])
-    return df, scaler
+    df['date'] = df['time'].dt.date
+    median_df = df.groupby('date')['value'].median().reset_index()
+    median_df['time'] = pd.to_datetime(median_df['date'])
+    median_df = median_df[['time', 'value']]
+    return median_df
 
 
-def create_sequences(df, sequence_length=10, colum='value'):
+def percentile_based_distillation(df, lower_percentile=0.25, upper_percentile=0.75):
     """
-    Create sequences and targets from the DataFrame for time series forecasting.
+    Retain values within a specified percentile range.
 
-    This function generates sequences of the specified length from the normalized column
-    and their corresponding targets.
-
-    :param df: The DataFrame containing the data.
-    :type df: pandas.DataFrame
-    :param sequence_length: The length of the sequences to create.
-    :type sequence_length: int
-    :param colum: The column to use for creating sequences, defaults to 'value'.
-    :type colum: str, optional
-    :return: A tuple containing the sequences and targets.
-    :rtype: tuple
+    :param df: The input DataFrame containing time series data.
+    :type df: pd.DataFrame
+    :param lower_percentile: The lower percentile boundary, defaults to 0.25.
+    :type lower_percentile: float, optional
+    :param upper_percentile: The upper percentile boundary, defaults to 0.75.
+    :type upper_percentile: float, optional
+    :return: A DataFrame containing values within the specified percentile range.
+    :rtype: pd.DataFrame
     """
-    sequences = []
-    targets = []
-    for i in range(len(df) - sequence_length):
-        seq = df[f'{colum}_normalized'].iloc[i:i + sequence_length].values
-        target = df[f'{colum}_normalized'].iloc[i + sequence_length]
-        sequences.append(seq)
-        targets.append(target)
-    return np.array(sequences), np.array(targets)
+    lower_bound = df['value'].quantile(lower_percentile)
+    upper_bound = df['value'].quantile(upper_percentile)
+    percentile_df = df[(df['value'] >= lower_bound) & (df['value'] <= upper_bound)].reset_index(drop=True)
+    return percentile_df
 
 
-def train_rat_bptt(model, train_data, train_targets, num_epochs=100):
+def peak_detection_distillation(df, height=None, distance=None):
     """
-    Train the RaT-BPTT model.
+    Identify and retain peak values in the time series.
 
-    This function trains the given model using the provided training data and targets
-    for a specified number of epochs.
-
-    :param model: The RNN model to train.
-    :type model: torch.nn.Module
-    :param train_data: The training data.
-    :type train_data: torch.Tensor
-    :param train_targets: The training targets.
-    :type train_targets: torch.Tensor
-    :param num_epochs: The number of epochs to train the model, defaults to 100.
-    :type num_epochs: int, optional
-    :return: The trained model.
-    :rtype: torch.nn.Module
+    :param df: The input DataFrame containing time series data.
+    :type df: pd.DataFrame
+    :param height: The required height of peaks, defaults to None.
+    :type height: float, optional
+    :param distance: The required minimal horizontal distance (in samples) between neighboring peaks, defaults to None.
+    :type distance: float, optional
+    :return: A DataFrame containing the peak values.
+    :rtype: pd.DataFrame
     """
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-    model.train()
-    for epoch in range(num_epochs):
-        optimizer.zero_grad()
-        outputs = model(train_data)
-        loss = criterion(outputs, train_targets)
-        loss.backward()
-        optimizer.step()
-    return model
+    peaks, _ = find_peaks(df['value'], height=height, distance=distance)
+    peak_df = df.iloc[peaks].reset_index(drop=True)
+    return peak_df
 
 
-def generate_new_data(model, initial_sequence, scaler, num_predictions=10):
-    """
-    Generate new data using the trained model.
-
-    This function generates new data points based on an initial sequence and a
-    trained model. The generated data is scaled back to the original range using
-    the provided scaler.
-
-    :param model: The trained RNN model.
-    :type model: torch.nn.Module
-    :param initial_sequence: The initial sequence to start the generation.
-    :type initial_sequence: numpy.ndarray
-    :param scaler: The scaler used for normalizing the data.
-    :type scaler: sklearn.preprocessing.MinMaxScaler
-    :param num_predictions: The number of predictions to generate, defaults to 10.
-    :type num_predictions: int, optional
-    :return: A list containing the generated data points.
-    :rtype: list
-    """
-    model.eval()
-    generated_data = []
-    current_seq = initial_sequence
-    for _ in range(num_predictions):
-        current_seq_tensor = torch.tensor(current_seq[np.newaxis, :, np.newaxis], dtype=torch.float32)
-        next_value = model(current_seq_tensor).item()
-        generated_data.append(next_value)
-        # Update the sequence with the new value
-        current_seq = np.append(current_seq[1:], next_value)
-    return scaler.inverse_transform(np.array(generated_data).reshape(-1, 1))
-
-
-def add_predictions_to_df(df, predictions, freq='min'):
-    """
-    Add predicted values to the DataFrame.
-
-    This function adds the predicted values to the original DataFrame with
-    corresponding timestamps.
-
-    :param df: The original DataFrame.
-    :type df: pandas.DataFrame
-    :param predictions: The predicted values.
-    :type predictions: list
-    :param freq: The frequency for the timestamps, defaults to 'M' (monthly).
-    :type freq: str, optional
-    :return: The DataFrame with added predictions.
-    :rtype: pandas.DataFrame
-    """
-    last_timestamp = df['time'].iloc[-1]
-    prediction_timestamps = pd.date_range(start=last_timestamp, periods=len(predictions) + 1, freq=freq)[1:]
-    predicted_df = pd.DataFrame({'time': prediction_timestamps, 'predicted_value': predictions.flatten()})
-    return pd.concat([df, predicted_df], ignore_index=True)
-
-
-def rat_bptt_predictions(column='value', sequence_length=10, epochs=50, num_predictions=10):
-    """
-    Generate predictions using the RaT-BPTT model.
-
-    This function loads and preprocesses the data, creates sequences, trains the
-    RaT-BPTT model, generates new data, and adds the predicted values to the original
-    DataFrame.
-
-    :param column: The column to use for predictions, defaults to 'value'.
-    :type column: str, optional
-    :param sequence_length: The length of the sequences to create, defaults to 10.
-    :type sequence_length: int, optional
-    :return: The DataFrame with added predictions.
-    :rtype: pandas.DataFrame
-    """
-    # Load and preprocess the data
-    df, scaler = load_and_preprocess_data('power_small.csv', column)
-
-    # Create sequences
-    sequences, targets = create_sequences(df, sequence_length)
-
-    # Prepare data for PyTorch (convert to tensors)
-    train_data = torch.tensor(sequences[:, :, np.newaxis], dtype=torch.float32)  # Add feature dimension
-    train_targets = torch.tensor(targets[:, np.newaxis], dtype=torch.float32)
-
-    # Initialize model
-    model = RNNModel(1, 64, 1)
-
-    # Train the model
-    trained_model = train_rat_bptt(model, train_data, train_targets, num_epochs=epochs)
-
-    # Generate new data (forecast future values)
-    initial_sequence = sequences[-1]
-    new_data_rat_bptt = generate_new_data(trained_model, initial_sequence, scaler, num_predictions)
-    # Add the predicted values to the original DataFrame
-    return add_predictions_to_df(df, new_data_rat_bptt)
-
-
-# Add below lines to the endpoint
-# X, y = prepare_data('power_small.csv')
-# distilled_rcig_X, distilled_rcig_y = rcig_distillation(torch.tensor(X, dtype=torch.float32), y)
-# print(f'Distilled Data (RCIG): {distilled_rcig_X}, {distilled_rcig_y}')
-
-# x = rat_bptt_predictions(column='value', sequence_length=50)
-# print(f'Distilled Data (RAT): {x.tail(30)}')
+# df = pd.read_csv('power_small.csv', sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
+# top_k_df = top_k_distillation(df, k=10)
+# print(top_k_df)
+#
+# df = pd.read_csv('power_small.csv', sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
+# threshold_df = threshold_based_distillation(df, threshold=10000)
+# print(threshold_df)
+#
+# df = pd.read_csv('power_small.csv', sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
+# median_df = daily_median_distillation(df)
+# print(median_df)
+#
+# df = pd.read_csv('power_small.csv', sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
+# percentile_df = percentile_based_distillation(df, lower_percentile=0.25, upper_percentile=0.75)
+# print(percentile_df)
+#
+# df = pd.read_csv('power_small.csv', sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
+# peak_df = peak_detection_distillation(df, height=10000, distance=5)
+# print(peak_df)
