@@ -30,6 +30,10 @@ from src.time_series.balancing import upsampling, downsampling, rolling_window
 from src.time_series.enrichment import enrich_with_statistics, enrich_with_temporal_features, \
     enrich_with_anomaly_detection, add_polynomial_features, add_log_features, add_cyclical_features, standardize_data
 
+# Distillation
+from src.time_series.distillation import threshold_based_distillation, tf_based_median_distillation, \
+    percentile_based_distillation, peak_detection_distillation, top_k_distillation
+
 router = APIRouter(prefix="/time_series", tags=["Time Series"])
 
 
@@ -416,6 +420,89 @@ def standardize_data_endpoint(
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
         standardized_df = standardize_data(df, column)
         return standardized_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/distillation/top_k")
+def distillation_top_k_endpoint(
+        csv: UploadFile = File(description="The csv to apply top-k distillation"),
+        column: str = Query(default="value", description="The column to select top-k values from"),
+        k: int = Query(default=10, description="The number of top values to select")
+):
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        distilled_df = top_k_distillation(df, column, k)
+        return distilled_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/distillation/threshold")
+def distillation_threshold_endpoint(
+        csv: UploadFile = File(description="The csv to apply threshold-based distillation"),
+        column: str = Query(default="value", description="The column to apply threshold on"),
+        threshold: int = Query(default=10000, description="The value threshold")
+):
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        distilled_df = threshold_based_distillation(df, column, threshold)
+        return distilled_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/distillation/tf_based_median")
+def tf_based_median_distillation_endpoint(
+        csv: UploadFile = File(description="The csv to apply daily median distillation"),
+        timeframe: str = Query(default='d',
+                               description="The timeframe on which to calculate median. "
+                                           "Some possible values are: d (day), h (hour), min (minute)")
+):
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        distilled_df = tf_based_median_distillation(df, timeframe)
+        return distilled_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/distillation/percentile")
+def distillation_percentile_endpoint(
+        csv: UploadFile = File(description="The csv to apply percentile-based distillation"),
+        column: str = Query(default="value", description="The column to apply percentile-based distillation on"),
+        lower_percentile: float = Query(default=0.25, description="The lower percentile boundary"),
+        upper_percentile: float = Query(default=0.75, description="The upper percentile boundary")
+):
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        distilled_df = percentile_based_distillation(df, column, lower_percentile, upper_percentile)
+        return distilled_df.to_dict(orient="records")
+    except Exception as e:
+        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
+    finally:
+        csv.file.close()
+
+
+@router.post("/distillation/peak_detection")
+def distillation_peak_detection_endpoint(
+        csv: UploadFile = File(description="The csv to apply peak detection distillation"),
+        column: str = Query(default="value", description="The column to detect peaks in"),
+        height: float = Query(default=10000, description="The required height of peaks"),
+        distance: int = Query(default=5, description="The required minimal horizontal distance between peaks")
+):
+    try:
+        df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
+        distilled_df = peak_detection_distillation(df, column, height, distance)
+        return distilled_df.to_dict(orient="records")
     except Exception as e:
         return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
     finally:
