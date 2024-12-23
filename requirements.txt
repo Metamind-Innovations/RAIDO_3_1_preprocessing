@@ -1,6 +1,6 @@
 albumentations
 extendable_enum
-fastapi
+fastapi[standard]
 imbalanced_learn
 matplotlib
 numpy
