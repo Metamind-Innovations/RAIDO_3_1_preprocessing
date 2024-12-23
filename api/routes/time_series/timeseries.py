@@ -49,24 +49,6 @@ def cleanup(df):
 # TODO: Later the file will be loaded from a url. Add async await to all endpoints
 
 
-@router.get("/endpoints")
-def list_endpoints():
-    try:
-        endpoints = []
-        for route in router.routes:
-            if hasattr(route, "methods"):
-                for method in route.methods:
-                    if method in ["GET", "POST", "PUT", "DELETE"]:
-                        endpoints.append({
-                            "path": route.path,
-                            "method": method,
-                            "name": route.name
-                        })
-        return JSONResponse(status_code=200, content=jsonable_encoder(endpoints))
-    except Exception as e:
-        return JSONResponse(status_code=500, content=jsonable_encoder({"message": f"Error: {str(e)}"}))
-
-
 @router.post("/missing_data/impute")
 def impute_missing_data_endpoint(csv: UploadFile = File(description="The csv to impute missing data"),
                                  method: ImputationNameTimeseries = Query(...,
