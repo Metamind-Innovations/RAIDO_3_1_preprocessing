@@ -21,6 +21,11 @@ class ImputationName(str, Enum):
     median = "median"
 
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
 class ImputationNameTimeseries(ImputationName):
     fill = 'fill'
     most_frequent = "most_frequent"

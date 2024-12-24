@@ -1,11 +1,14 @@
-from typing import List
+import time
+from typing import List, Optional
 import numpy as np
 import pandas as pd
-from fastapi import APIRouter, UploadFile, File, Query
+from fastapi import APIRouter, UploadFile, File, Query, Depends, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+import jwt
 
-from api.models import ImputationNameTimeseries, NoiseRemovalMethod, OutlierNameTimeseries
+from api.models import ImputationNameTimeseries, NoiseRemovalMethod, OutlierNameTimeseries, Token
 
 # Missing data
 from src.time_series.ts_missing_data import normalize_data, impute_missing_data, cleanup_df_zero_nans
@@ -37,6 +40,52 @@ from src.time_series.distillation import threshold_based_distillation, tf_based_
 
 router = APIRouter(prefix="/time_series", tags=["Time Series"])
 
+# Security
+SECRET_KEY = "your_secret_key"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+
+def create_access_token(data: dict, expires_delta: Optional[int] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = time.time() + expires_delta
+    else:
+        expire = time.time() + ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+def verify_token(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except jwt.PyJWTError:
+        raise credentials_exception
+    return username
+
+
+@router.post("/token", response_model=Token)
+def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    if form_data.username != "user" or form_data.password != "pass":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token = create_access_token(data={"sub": form_data.username})
+    return {"access_token": access_token, "token_type": "bearer"}
+
 
 def cleanup(df):
     for column in df.columns[1:]:
@@ -52,7 +101,8 @@ def cleanup(df):
 @router.post("/missing_data/impute")
 def impute_missing_data_endpoint(csv: UploadFile = File(description="The csv to impute missing data"),
                                  method: ImputationNameTimeseries = Query(...,
-                                                                          description="The method to use for imputation")):
+                                                                          description="The method to use for imputation"),
+                                 token: str = Depends(oauth2_scheme), ):
     try:
         # Read csv with proper parsing of dates and separator
         df = pd.read_csv(csv.file, sep=';', parse_dates=[0], dayfirst=True, low_memory=False)
@@ -73,6 +123,7 @@ def detect_outliers_endpoint(
                                               description="The method to use for outlier detection"),
         voting_threshold: int = Query(2,
                                       description="The minimum number of outlier detection methods that must detect an outlier for it to be considered as an outlier."),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         # Read csv with proper parsing of dates and separator
@@ -92,6 +143,7 @@ def noise_removal_endpoint(
             ...,
             description="Method used for noise removal. Possible values: 'ema', 'fourier', 'savitzky', 'wavelet'"
         ),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -112,6 +164,7 @@ def noise_removal_endpoint(
 @router.post("/feature_engineering/date_features")
 def feature_engineering_date_features_endpoint(
         csv: UploadFile = File(description="The csv to engineer date features"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -128,6 +181,7 @@ def feature_engineering_difference_endpoint(
         csv: UploadFile = File(description="The csv to engineer differences"),
         column: str = Query(default="value", description="The column to calculate the differences for"),
         order: int = Query(default=1, description="The order of the differences"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -143,6 +197,7 @@ def feature_engineering_difference_endpoint(
 def feature_engineering_one_hot_endpoint(
         csv: UploadFile = File(description="The csv to engineer one-hot features"),
         list_columns: List[str] = Query(default=["value"], description="The list of columns to one-hot encode"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -159,6 +214,7 @@ def dimensionality_reduction_pca_endpoint(
         csv: UploadFile = File(description="The csv to perform PCA on"),
         column: str = Query(default="value", description="The column to perform PCA on"),
         max_components: int = Query(default=None, description="The maximum number of components to keep"),
+        token: str = Depends(oauth2_scheme),
 ):
     """
     Apply Principal Component Analysis (PCA) to a given dataset of time series data.
@@ -193,6 +249,7 @@ def dimensionality_reduction_isomap_endpoint(
         n_components: int = Query(default=2, description="The number of components to keep"),
         column: str = Query(default="value", description="The column to perform Isomap on"),
         n_neighbors: int = Query(default=10, description="The number of neighbors to consider"),
+        token: str = Depends(oauth2_scheme),
 ):
     """
     Apply Isometric Mapping (Isomap) to a given dataset of time series data.
@@ -227,6 +284,7 @@ def dimensionality_reduction_isomap_endpoint(
 def dimensionality_reduction_pvqa_endpoint(
         csv: UploadFile = File(description="The csv to perform PVQA on"),
         num_segments: int = Query(default=10, description="The number of segments to divide the data into"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -245,6 +303,7 @@ def dimensionality_reduction_autoencoder_endpoint(
         csv: UploadFile = File(description="The csv to perform autoencoder on"),
         column: str = Query(default="value", description="The column to perform autoencoder on"),
         n_lag: int = Query(default=2, description="The number of components to keep"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -261,6 +320,7 @@ def dimensionality_reduction_autoencoder_endpoint(
 def balancing_upsample_endpoint(
         csv: UploadFile = File(description="The csv to upsample"),
         target_frequency: str = Query(default='min', description="The target frequency for upsampling"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -276,6 +336,7 @@ def balancing_upsample_endpoint(
 def balancing_downsample_endpoint(
         csv: UploadFile = File(description="The csv to downsample"),
         target_frequency: str = Query(default='h', description="The target frequency for downsampling"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -295,6 +356,7 @@ def balancing_rolling_window_endpoint(
         aggregation_method: str = Query(default='mean',
                                         description="Method to aggregate values ('mean', 'sum', 'std', 'min', 'max')"),
         min_periods: int = Query(default=1, description="Minimum number of observations required for calculation"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -313,7 +375,8 @@ def enrichment_statistics_endpoint(
         window_sizes: List[int] = Query(default=[5],
                                         description="List of window sizes for rolling calculations"),
         quantiles: List[float] = Query(default=[0.25],
-                                       description="List of quantiles to calculate for each window size")
+                                       description="List of quantiles to calculate for each window size"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True)
@@ -329,7 +392,8 @@ def enrichment_statistics_endpoint(
 @router.post("/enrichment/temporal_features")
 def enrichment_temporal_features_endpoint(
         csv: UploadFile = File(description="The csv to enrich with temporal features"),
-        column: str = Query(default="value", description="The column to calculate temporal features for")
+        column: str = Query(default="value", description="The column to calculate temporal features for"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -347,7 +411,8 @@ def enrichment_anomaly_detection_endpoint(
         csv: UploadFile = File(description="The csv to enrich with anomaly detection"),
         column: str = Query(default="value", description="The column to detect anomalies in"),
         contamination: float = Query(default=0.01,
-                                     description="The proportion of anomalies in the data for isolation forest")
+                                     description="The proportion of anomalies in the data for isolation forest"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -365,7 +430,8 @@ def enrichment_anomaly_detection_endpoint(
 def enrichment_polynomial_features_endpoint(
         csv: UploadFile = File(description="The csv to enrich with polynomial features"),
         column: str = Query(default="value", description="The column to create polynomial features for"),
-        degree: int = Query(default=2, description="The degree of the polynomial features")
+        degree: int = Query(default=2, description="The degree of the polynomial features"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -381,7 +447,8 @@ def enrichment_polynomial_features_endpoint(
 @router.post("/enrichment/log_features")
 def enrichment_log_features_endpoint(
         csv: UploadFile = File(description="The csv to enrich with log features"),
-        column: str = Query(default="value", description="The column to create log features for")
+        column: str = Query(default="value", description="The column to create log features for"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -400,7 +467,8 @@ def enrichment_log_features_endpoint(
 def enrichment_cyclical_features_endpoint(
         csv: UploadFile = File(description="The csv to enrich with cyclical features"),
         column: str = Query(default="value", description="The column to create cyclical features for"),
-        period: int = Query(default=24, description="The period for the cyclical features")
+        period: int = Query(default=24, description="The period for the cyclical features"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -415,7 +483,8 @@ def enrichment_cyclical_features_endpoint(
 @router.post("/standardize_data")
 def standardize_data_endpoint(
         csv: UploadFile = File(description="The csv to standardize"),
-        column: str = Query(default="value", description="The column to standardize")
+        column: str = Query(default="value", description="The column to standardize"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -431,7 +500,8 @@ def standardize_data_endpoint(
 def distillation_top_k_endpoint(
         csv: UploadFile = File(description="The csv to apply top-k distillation"),
         column: str = Query(default="value", description="The column to select top-k values from"),
-        k: int = Query(default=10, description="The number of top values to select")
+        k: int = Query(default=10, description="The number of top values to select"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -447,7 +517,8 @@ def distillation_top_k_endpoint(
 def distillation_threshold_endpoint(
         csv: UploadFile = File(description="The csv to apply threshold-based distillation"),
         column: str = Query(default="value", description="The column to apply threshold on"),
-        threshold: int = Query(default=10000, description="The value threshold")
+        threshold: int = Query(default=10000, description="The value threshold"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -464,7 +535,8 @@ def tf_based_median_distillation_endpoint(
         csv: UploadFile = File(description="The csv to apply daily median distillation"),
         timeframe: str = Query(default='d',
                                description="The timeframe on which to calculate median. "
-                                           "Some possible values are: d (day), h (hour), min (minute)")
+                                           "Some possible values are: d (day), h (hour), min (minute)"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -481,7 +553,8 @@ def distillation_percentile_endpoint(
         csv: UploadFile = File(description="The csv to apply percentile-based distillation"),
         column: str = Query(default="value", description="The column to apply percentile-based distillation on"),
         lower_percentile: float = Query(default=0.25, description="The lower percentile boundary"),
-        upper_percentile: float = Query(default=0.75, description="The upper percentile boundary")
+        upper_percentile: float = Query(default=0.75, description="The upper percentile boundary"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -498,7 +571,8 @@ def distillation_peak_detection_endpoint(
         csv: UploadFile = File(description="The csv to apply peak detection distillation"),
         column: str = Query(default="value", description="The column to detect peaks in"),
         height: float = Query(default=10000, description="The required height of peaks"),
-        distance: int = Query(default=5, description="The required minimal horizontal distance between peaks")
+        distance: int = Query(default=5, description="The required minimal horizontal distance between peaks"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -513,7 +587,8 @@ def distillation_peak_detection_endpoint(
 @router.post("/distillation/step")
 def distillation_step_endpoint(
         csv: UploadFile = File(description="The csv to apply step distillation"),
-        feedback_steps: int = Query(default=5, description="The number of feedback steps")
+        feedback_steps: int = Query(default=5, description="The number of feedback steps"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
@@ -529,7 +604,8 @@ def distillation_step_endpoint(
 def distillation_clustering_endpoint(
         csv: UploadFile = File(description="The csv to apply clustering-based distillation"),
         column: str = Query(default="value", description="The column to distill"),
-        n_clusters: int = Query(default=10, description="The number of clusters to form")
+        n_clusters: int = Query(default=10, description="The number of clusters to form"),
+        token: str = Depends(oauth2_scheme),
 ):
     try:
         df = pd.read_csv(csv.file, sep=";", parse_dates=[0], dayfirst=True, low_memory=False)
