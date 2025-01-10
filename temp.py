@@ -32,13 +32,47 @@ from src.images.enrichment import (
     normalize_pixel_values,
 )
 
-from src.images.balancing import analyze_class_distribution
+from src.images.balancing import (
+    analyze_class_distribution,
+    evaluate_class_imbalance,
+    oversample_minority_classes,
+    smote_oversampling,
+)
 
-label_csv = pd.read_csv("plant_images/labels.csv")
+label_csv = pd.read_csv("plant_images/balance_test/labels.csv")
 labels = label_csv["CLASS"].tolist()
 
+# Get list of image files in plant_images directory
+image_files = []
+for image_id in label_csv["IMAGE_ID"]:
+    # Search for files with the image_id as prefix and common image extensions
+    for ext in [".jpg", ".jpeg", ".png"]:
+        potential_file = os.path.join("plant_images/balance_test", image_id + ext)
+        if os.path.exists(potential_file):
+            image_files.append(potential_file)
+            break
+
+# Load all images into numpy arrays
+images = []
+for image_file in image_files:
+    # Load and convert each image to numpy array
+    img = load_and_process_image(image_file)
+    images.append(np.array(img))
+
 result = analyze_class_distribution(labels)
-print(result)
+
+class_specific_imbalances = evaluate_class_imbalance(result, 0.5, 0.2)
+print(class_specific_imbalances)
+
+balanced_images, balanced_labels = smote_oversampling(images, labels, k_neighbors=1)
+
+# Visualize original and balanced dataset
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 10))
+
+# Plot original images
+plot_multiple_images(balanced_images, balanced_labels)
+
+
 # print("\nClass Distribution Analysis:")
 # print("-" * 30)
 # print(f"\nTotal Samples: {result['total_samples']}")

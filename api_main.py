@@ -8,6 +8,7 @@ from api.routes.images import (
     dim_reduction,
     noise,
     enrichment,
+    balancing,
 )
 
 
@@ -36,6 +37,10 @@ tags_metadata = [
         "name": "Images Enrichment",
         "description": "Operations related to image enrichment.",
     },
+    {
+        "name": "Image Balancing",
+        "description": "Operations related to image balancing.",
+    },
 ]
 
 app = FastAPI(title="RAIDO Data Preprocessing API", openapi_tags=tags_metadata)
@@ -46,6 +51,7 @@ app.include_router(outliers.router)
 app.include_router(dim_reduction.router)
 app.include_router(noise.router)
 app.include_router(enrichment.router)
+app.include_router(balancing.router)
 
 
 def main():
