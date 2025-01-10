@@ -1,6 +1,7 @@
 albumentations
 extendable_enum
-fastapi
+fastapi[standard]
+fastapi[security]
 imbalanced_learn
 matplotlib
 numpy
@@ -12,3 +13,8 @@ scipy
 scikit-image
 uvicorn
 holidays
+PyWavelets
+statsmodels
+torch
+PyJWT
+requests

@@ -1,0 +1,79 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre
+.pyre/
+
+# Cython debug symbols
+cython_debug/
+
+# Project specific files
+.idea/
+.vscode/
+*.db
+*.sqlite3
+*.log
+*.csv
+*.h5
+*.xlsx
+.DS_Store
+.env
+
+# Documentation
+*.md
+
+# Tests
+tests/
+
+# Ignore data folders
+plant_images/
+data/
+
+# Ignore compiled or generated files
+*.out
+*.o
+*.exe
+*.dll
+*.a
+*.lib

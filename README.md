@@ -58,3 +58,14 @@ This will start the FastAPI server and you can access the API documentation at h
 
 ## Documentation
 *[TODO] Further reading or API documentation links to be added here*
+
+## Testing
+To test the API, first run the server:
+```bash
+uvicorn api_main:app --reload
+```
+
+Then, run the test file:
+```bash
+python3 test_multi_file_endpoints.py
+```
