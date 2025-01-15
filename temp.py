@@ -61,16 +61,16 @@ for image_file in image_files:
 
 result = analyze_class_distribution(labels)
 
-class_specific_imbalances = evaluate_class_imbalance(result, 0.5, 0.2)
+class_specific_imbalances = evaluate_class_imbalance(result, 0.1, 0.2)
 print(class_specific_imbalances)
 
-balanced_images, balanced_labels = smote_oversampling(images, labels, k_neighbors=1)
+# balanced_images, balanced_labels = smote_oversampling(images, labels, k_neighbors=1)
 
-# Visualize original and balanced dataset
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 10))
+# # Visualize original and balanced dataset
+# fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 10))
 
-# Plot original images
-plot_multiple_images(balanced_images, balanced_labels)
+# # Plot original images
+# plot_multiple_images(balanced_images, balanced_labels)
 
 
 # print("\nClass Distribution Analysis:")

@@ -78,9 +78,6 @@ def evaluate_class_imbalance(
     ideal_percentage = 100.0 / num_classes
     class_percentages = distribution_stats["class_percentages"]
 
-    print(ideal_percentage)
-    print(class_percentages)
-
     # Evaluate each class's deviation from ideal distribution
     for cls, percentage in class_percentages.items():
         ratio_to_ideal = percentage / ideal_percentage

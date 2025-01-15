@@ -111,3 +111,21 @@ class ClassDistributionAnalysis(BaseModel):
             ]
         }
     }
+
+
+class ClassImbalanceEvaluation(BaseModel):
+    class_specific_imbalances: Dict[str, str] = {}
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "class_specific_imbalances": {
+                        "class1": "severe_imbalance",
+                        "class2": "mild_imbalance",
+                        "class3": "balanced",
+                    }
+                }
+            ]
+        }
+    }
