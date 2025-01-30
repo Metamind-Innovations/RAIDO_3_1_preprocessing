@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 
-from src.images.outliers import (
+from src.images.image_outliers import (
     detect_pixel_level_outliers,
     visualize_pixel_outliers,
     visualize_image_outliers,
@@ -20,7 +20,7 @@ from src.images.utils import load_and_process_image
 from src.images.visualization import plot_multiple_images
 
 from src.images.noise import denoise_non_local_means, visualize_denoised_image
-from src.images.missing_data import (
+from src.images.invalid_pixel_detection import (
     visualize_imputed_data,
     visualize_interpolated_data,
     visualize_missing_data,

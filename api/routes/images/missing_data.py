@@ -8,7 +8,7 @@ from fastapi.responses import Response, JSONResponse
 from matplotlib import pyplot as plt
 import numpy as np
 
-from src.images.missing_data import (
+from src.images.invalid_pixel_detection import (
     detect_missing_data,
     impute_missing_data,
     interpolate_missing_data,

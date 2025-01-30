@@ -1,0 +1,9 @@
+{
+    "image_paths": [
+        "./test_input/fumagina_1.png",
+        "./test_input/healthy_flower_1.png",
+        "./test_input/healthy_flower_2.jpg",
+        "./test_input/healthy_leaf_1.jpg"
+    ],
+    "label_path": "/test_input/labels.csv"
+}

@@ -3,14 +3,14 @@ from PIL import Image
 from matplotlib import pyplot as plt
 import numpy as np
 
-from src.images.missing_data import (
+from src.images.invalid_pixel_detection import (
     detect_missing_data,
     impute_missing_data,
     interpolate_missing_data,
 )
 from src.images.visualization import plot_image_outliers, plot_multiple_images
 from src.images.utils import load_and_process_image
-from src.images.outliers import detect_image_level_outliers
+from src.images.image_outliers import detect_image_level_outliers
 
 
 def main():
