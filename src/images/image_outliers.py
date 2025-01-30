@@ -41,9 +41,9 @@ def detect_image_level_outliers(
             image = image[:, :, :3]
         print(image.shape)
         images.append(image)
-    
+
     images_array = np.stack(images)
-    
+
     # Reshape images to 2D array (n_samples, n_features)
     n_samples = images_array.shape[0]
     flattened_images = images_array.reshape(n_samples, -1)
@@ -58,7 +58,8 @@ def detect_image_level_outliers(
 
     # Get paths of outlier images
     outlier_paths = [
-        path for path, label in zip(img_json["image_paths"], outlier_labels)
+        path
+        for path, label in zip(img_json["image_paths"], outlier_labels)
         if label == -1
     ]
 
@@ -72,7 +73,9 @@ def remove_image_outliers(img_json: dict) -> dict:
     Remove outlier images from the img_json
     """
     img_json["image_paths"] = [
-        path for path in img_json["image_paths"] if path not in img_json["image_outliers"]
+        path
+        for path in img_json["image_paths"]
+        if path not in img_json["image_outliers"]
     ]
     return img_json
 

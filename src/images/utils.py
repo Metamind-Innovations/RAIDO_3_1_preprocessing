@@ -22,22 +22,3 @@ def resize_image(img: np.ndarray, height: int = 360, width: int = 360) -> np.nda
     img = Image.fromarray(img)
     img = img.resize((height, width))
     return np.array(img)
-
-
-# TODO: Maybe this has to change
-# def load_and_process_image(
-#     img_path: Union[str, Path],
-#     height: int = 360,
-#     width: int = 360,
-# ) -> np.ndarray:
-#     img = PIL.Image.open(img_path)
-
-#     if img.mode != "RGB":
-#         img = img.convert("RGB")
-
-#     img = img.resize((height, width))
-
-#     return np.array(img)
-
-
-

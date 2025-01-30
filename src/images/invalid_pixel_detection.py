@@ -1,6 +1,3 @@
-from typing import Union
-
-from matplotlib import pyplot as plt
 import numpy as np
 from sklearn.neighbors import LocalOutlierFactor
 
@@ -10,15 +7,15 @@ from src.images.utils import load_image
 def detect_missing_data(img_json: dict) -> dict:
     """
     Detect missing data in images and add missing coordinates to the json.
-    
+
     Args:
         img_json: Dictionary containing image paths and path_to_id mapping
-        
+
     Returns:
         Updated img_json with missing_coords field added
     """
     missing_coords_dict = {}
-    
+
     for img_path in img_json["image_paths"]:
         image = load_image(img_path)
 
@@ -26,13 +23,13 @@ def detect_missing_data(img_json: dict) -> dict:
         missing_mask = np.all(image == 0, axis=2)
         rows, cols = np.where(missing_mask)
         missing_coords = np.column_stack((rows, cols))
-        
+
         # Store coords using image id as key
         img_id = img_json["path_to_id"][img_path]
         missing_coords_dict[img_id] = missing_coords.tolist()
 
     img_json["missing_coords"] = missing_coords_dict
-    
+
     return img_json
 
 
@@ -67,7 +64,9 @@ def detect_pixel_level_outliers(
         image_2d = image.reshape(-1, image.shape[-1] if len(image.shape) > 2 else 1)
 
         if method == "lof":
-            lof = LocalOutlierFactor(n_neighbors=n_neighbors, contamination=contamination)
+            lof = LocalOutlierFactor(
+                n_neighbors=n_neighbors, contamination=contamination
+            )
             outlier_labels = lof.fit_predict(image_2d)
             # Reshape back to original image shape
             outlier_labels = outlier_labels.reshape(image.shape[:-1])

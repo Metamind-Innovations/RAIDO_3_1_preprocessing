@@ -5,5 +5,5 @@
         "./test_input/healthy_flower_2.jpg",
         "./test_input/healthy_leaf_1.jpg"
     ],
-    "label_path": "/test_input/labels.csv"
+    "label_path": "./test_input/labels.csv"
 }

@@ -5,17 +5,14 @@ from scipy import interpolate
 from src.images.utils import load_image
 
 
-def impute_invalid_pixels(
-    img_json: dict,
-    mode: str = "mean"
-) -> dict:
+def impute_invalid_pixels(img_json: dict, mode: str = "mean") -> dict:
     """
     Impute missing and outlier pixels in images using a single value and save imputed images.
-    
+
     Args:
         img_json: Dictionary containing image paths, path_to_id mapping, missing_coords and outlier_coords
         mode: Imputation mode - either 'mean' or 'median'
-        
+
     Returns:
         The input img_json dict unchanged
     """
@@ -24,8 +21,6 @@ def impute_invalid_pixels(
 
     for img_path in img_json["image_paths"]:
         image = load_image(img_path)
-        if not isinstance(image, np.ndarray):
-            image = np.array(image)
 
         img_id = img_json["path_to_id"][img_path]
         missing_coords = np.array(img_json["missing_coords"][img_id])
@@ -50,24 +45,21 @@ def impute_invalid_pixels(
                 raise NotImplementedError(f"Invalid mode: {mode}")
 
             imputed_image[invalid_pixels_mask] = imputation_value
-            
+
             # Save imputed image back to original path
             Image.fromarray(imputed_image.astype(np.uint8)).save(img_path)
 
     return img_json
 
 
-def interpolate_invalid_pixels(
-    img_json: dict,
-    method: str = "linear"
-) -> dict:
+def interpolate_invalid_pixels(img_json: dict, method: str = "linear") -> dict:
     """
     Interpolate missing and outlier pixels in images using spatial interpolation and save interpolated images.
-    
+
     Args:
         img_json: Dictionary containing image paths, path_to_id mapping, missing_coords and outlier_coords
         method: Interpolation method - either 'linear', 'nearest', or 'cubic'
-        
+
     Returns:
         The input img_json dict unchanged
     """
@@ -76,8 +68,6 @@ def interpolate_invalid_pixels(
 
     for img_path in img_json["image_paths"]:
         image = load_image(img_path)
-        if not isinstance(image, np.ndarray):
-            image = np.array(image)
 
         img_id = img_json["path_to_id"][img_path]
         missing_coords = np.array(img_json["missing_coords"][img_id])

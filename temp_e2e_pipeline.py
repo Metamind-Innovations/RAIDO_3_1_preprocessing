@@ -1,10 +1,17 @@
 import json
 
 from src.images.utils import image_path2id
-from src.images.invalid_pixel_detection import detect_missing_data, detect_pixel_level_outliers
-from src.images.invalid_pixel_handling import impute_invalid_pixels, interpolate_invalid_pixels
+from src.images.invalid_pixel_detection import (
+    detect_missing_data,
+    detect_pixel_level_outliers,
+)
+from src.images.invalid_pixel_handling import (
+    impute_invalid_pixels,
+    interpolate_invalid_pixels,
+)
 from src.images.image_outliers import detect_image_level_outliers, remove_image_outliers
 from src.images.noise import detect_noise, denoise_non_local_means
+from src.images.enrichment import transform_images
 
 
 def main():
@@ -28,7 +35,7 @@ def main():
             print(f"{key}: {len(value)} entries")
         elif isinstance(value, list):
             print(f"{key}: {len(value)} items")
-    
+
     print("\nOutlier coords structure:")
     for img_id, coords in img_json["outlier_coords"].items():
         print(f"{img_id}: {len(coords)} outlier pixels")
@@ -43,11 +50,27 @@ def main():
     # print("\nFinal img_json:")
     # print(json.dumps(img_json, indent=4))
 
-    img_json = detect_noise(img_json)
-    print("\nFinal img_json:")
-    print(json.dumps(img_json, indent=4))
+    # img_json = detect_noise(img_json)
+    # print("\nFinal img_json:")
+    # print(json.dumps(img_json, indent=4))
 
-    img_json = denoise_non_local_means(img_json)
+    # img_json = denoise_non_local_means(img_json)
+
+    img_json = transform_images(
+        img_json,
+        [
+            "crop",
+            "resize",
+            "rotation",
+            "shear",
+            "horizontal_flip",
+            "vertical_flip",
+            "brightness",
+            "contrast",
+            "saturation",
+            "hue",
+        ],
+    )
 
 
 if __name__ == "__main__":

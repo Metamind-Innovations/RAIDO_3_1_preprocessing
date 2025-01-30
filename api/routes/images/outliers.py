@@ -15,7 +15,10 @@ from api.models import (
     PixelOutlierDetectionMethod,
     OutlierPixels,
 )
-from src.images.image_outliers import detect_image_level_outliers, detect_pixel_level_outliers
+from src.images.image_outliers import (
+    detect_image_level_outliers,
+    detect_pixel_level_outliers,
+)
 from src.images.utils import resize_image
 
 

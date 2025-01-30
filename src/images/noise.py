@@ -1,7 +1,3 @@
-from typing import Union
-
-from matplotlib import pyplot as plt
-import matplotlib.gridspec as gridspec
 import numpy as np
 from PIL import Image
 from scipy import ndimage
@@ -15,32 +11,31 @@ def detect_noise(
     img_json: dict,
     *,
     threshold_snr: float = 30,
-    threshold_sigma: float = 0.01, 
+    threshold_sigma: float = 0.01,
     threshold_local_var: float = 0.01,
 ) -> dict:
     """
     Analyze whether images need noise removal and add noise analysis results to the json.
-    
+
     Args:
         img_json: Dictionary containing image paths and path_to_id mapping
         threshold_snr: SNR threshold in dB above which noise removal is unnecessary
         threshold_sigma: Noise standard deviation threshold below which noise removal is unnecessary
         threshold_local_var: Local variance threshold above which noise removal is recommended
-    
+
     Returns:
         Updated img_json with noise_analysis field added containing analysis results
     """
     noise_analysis = {}
-    
+
     for img_path in img_json["image_paths"]:
         image = load_image(img_path)
-        
-        # Normalize image to [0,1]
+
         if image.max() > 1.0:
             image = image / 255.0
-            
+
         results = {}
-        
+
         # 1. Estimate noise level
         channel_axis = -1 if len(image.shape) > 2 else None
         estimated_sigma = estimate_sigma(image, channel_axis=channel_axis)
@@ -49,48 +44,54 @@ def detect_noise(
             sigma_values = np.array(estimated_sigma).flatten()
         else:
             sigma_values = [estimated_sigma]
-        results['estimated_sigma'] = [float(s) for s in sigma_values]
-    
+        results["estimated_sigma"] = [float(s) for s in sigma_values]
+
         # 2. Calculate SNR
         mean_signal = np.mean(image)
         noise = image - ndimage.gaussian_filter(image, sigma=1)
         if channel_axis is not None:
             # Calculate SNR for each channel
-            noise_std = np.std(noise, axis=(0,1))
-            snr_values = [20 * np.log10(mean_signal / std) if std != 0 else float('inf') 
-                         for std in noise_std]
-            results['snr_db'] = [float(s) for s in snr_values]
+            noise_std = np.std(noise, axis=(0, 1))
+            snr_values = [
+                20 * np.log10(mean_signal / std) if std != 0 else float("inf")
+                for std in noise_std
+            ]
+            results["snr_db"] = [float(s) for s in snr_values]
         else:
             # Single channel calculation
             noise_std = np.std(noise)
-            snr = 20 * np.log10(mean_signal / noise_std) if noise_std != 0 else float('inf')
-            results['snr_db'] = [float(snr)]
-        
+            snr = (
+                20 * np.log10(mean_signal / noise_std)
+                if noise_std != 0
+                else float("inf")
+            )
+            results["snr_db"] = [float(snr)]
+
         # 3. Calculate local variance statistics
         local_var = ndimage.generic_filter(image, np.var, size=5)
         var_stats = {
-            'mean_local_var': float(np.mean(local_var)),
-            'max_local_var': float(np.max(local_var)),
-            'min_local_var': float(np.min(local_var))
+            "mean_local_var": float(np.mean(local_var)),
+            "max_local_var": float(np.max(local_var)),
+            "min_local_var": float(np.min(local_var)),
         }
-        results['variance_stats'] = var_stats
-        
+        results["variance_stats"] = var_stats
+
         # 4. Make recommendation
         # Check if any channel exceeds the thresholds
         needs_denoising = (
-            any(sigma > threshold_sigma for sigma in results['estimated_sigma']) or 
-            any(snr < threshold_snr for snr in results['snr_db']) or 
-            (var_stats['mean_local_var'] > threshold_local_var)
+            any(sigma > threshold_sigma for sigma in results["estimated_sigma"])
+            or any(snr < threshold_snr for snr in results["snr_db"])
+            or (var_stats["mean_local_var"] > threshold_local_var)
         )
-        
-        results['needs_denoising'] = needs_denoising
-        
+
+        results["needs_denoising"] = needs_denoising
+
         # Store results using image id as key
         img_id = img_json["path_to_id"][img_path]
         noise_analysis[img_id] = results
 
     img_json["noise_analysis"] = noise_analysis
-    
+
     return img_json
 
 
@@ -102,32 +103,28 @@ def denoise_non_local_means(
     fast_mode: bool = False,
 ) -> dict:
     """Apply non-local means denoising to images and store results in img_json.
-    
+
     Args:
         img_json: Dictionary containing image paths and path_to_id mapping
         patch_size: Size of patches used for denoising
         patch_distance: Maximal distance to search for patches
         fast_mode: If True, use fast version of non-local means
-        
+
     Returns:
         Updated img_json with denoised images and noise masks added
     """
-    denoising_results = {}
-    
+
     for img_path in img_json["image_paths"]:
-        # Load and convert image
         image = load_image(img_path)
-        if not isinstance(image, np.ndarray):
-            image = np.array(image)
         image = img_as_float(image)
 
         # Determine channel_axis based on image dimensions
         channel_axis = -1 if len(image.shape) > 2 else None
 
         patch_kw = dict(
-            patch_size=patch_size, 
-            patch_distance=patch_distance, 
-            channel_axis=channel_axis
+            patch_size=patch_size,
+            patch_distance=patch_distance,
+            channel_axis=channel_axis,
         )
 
         # Apply denoising
