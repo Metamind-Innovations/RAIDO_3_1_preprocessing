@@ -22,3 +22,25 @@ def resize_image(img: np.ndarray, height: int = 360, width: int = 360) -> np.nda
     img = Image.fromarray(img)
     img = img.resize((height, width))
     return np.array(img)
+
+
+def normalize_pixel_values(
+    image: np.ndarray,
+) -> np.ndarray:
+    if image.ndim == 3 and image.shape[-1] == 4:  # RGBA
+        rgb = image[..., :3]
+        alpha = image[..., 3]
+        
+        if rgb.max() > 1.0:
+            normalized_rgb = rgb / 255.0
+        else:
+            normalized_rgb = rgb.copy()
+            
+        normalized_image = np.dstack((normalized_rgb, alpha))
+    else:  # RGB or grayscale
+        if image.max() > 1.0:
+            normalized_image = image / 255.0
+        else:
+            normalized_image = image.copy()
+
+    return normalized_image

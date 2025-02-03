@@ -378,14 +378,6 @@ def hue_image(
     return transformed_image
 
 
-def normalize_pixel_values(
-    image: np.ndarray,
-) -> np.ndarray:
-    normalized_image = (image - image.min()) / (image.max() - image.min())
-
-    return normalized_image
-
-
 # def visualize_transformed_images(
 #     images: Union[list[np.ndarray], list[Image.Image]],
 #     transformation_list: list[str],

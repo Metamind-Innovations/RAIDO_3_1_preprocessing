@@ -4,7 +4,7 @@ from scipy import ndimage
 from skimage import img_as_float
 from skimage.restoration import denoise_nl_means, estimate_sigma
 
-from src.images.utils import load_image
+from src.images.utils import load_image, normalize_pixel_values
 
 
 def detect_noise(
@@ -31,8 +31,7 @@ def detect_noise(
     for img_path in img_json["image_paths"]:
         image = load_image(img_path)
 
-        if image.max() > 1.0:
-            image = image / 255.0
+        image = normalize_pixel_values(image)
 
         results = {}
 
