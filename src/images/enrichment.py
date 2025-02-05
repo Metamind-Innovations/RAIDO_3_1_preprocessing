@@ -1,5 +1,6 @@
 import albumentations as A
 import numpy as np
+import pandas as pd
 from PIL import Image
 
 from src.images.utils import load_image
@@ -134,7 +135,6 @@ def transform_images(
 
     # Update labels CSV
     if "label_path" in img_json:
-        import pandas as pd
 
         df = pd.read_csv(img_json["label_path"], index_col=False)
         print(df)
