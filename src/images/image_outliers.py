@@ -39,7 +39,6 @@ def detect_image_level_outliers(
         # Convert RGBA to RGB if necessary
         if image.shape[-1] == 4:
             image = image[:, :, :3]
-        print(image.shape)
         images.append(image)
 
     images_array = np.stack(images)

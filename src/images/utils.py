@@ -30,12 +30,12 @@ def normalize_pixel_values(
     if image.ndim == 3 and image.shape[-1] == 4:  # RGBA
         rgb = image[..., :3]
         alpha = image[..., 3]
-        
+
         if rgb.max() > 1.0:
             normalized_rgb = rgb / 255.0
         else:
             normalized_rgb = rgb.copy()
-            
+
         normalized_image = np.dstack((normalized_rgb, alpha))
     else:  # RGB or grayscale
         if image.max() > 1.0:

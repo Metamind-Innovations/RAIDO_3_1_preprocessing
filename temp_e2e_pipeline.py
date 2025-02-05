@@ -12,6 +12,12 @@ from src.images.invalid_pixel_handling import (
 from src.images.image_outliers import detect_image_level_outliers, remove_image_outliers
 from src.images.noise import detect_noise, denoise_non_local_means
 from src.images.enrichment import transform_images
+from src.images.balancing import (
+    analyze_class_distribution,
+    evaluate_class_imbalance,
+    oversample_minority_classes,
+    smote_oversampling,
+)
 
 
 def main():
@@ -24,34 +30,35 @@ def main():
     print("\nAfter image_path2id:")
     print(json.dumps(img_json, indent=4))
 
-    img_json = detect_missing_data(img_json)
-    print("\nAfter detect_missing_data:")
-    print(json.dumps(img_json, indent=4))
-
-    img_json = detect_pixel_level_outliers(img_json)
-    print("\nAfter detect_outlier_pixels:")
-    for key, value in img_json.items():
-        if isinstance(value, dict):
-            print(f"{key}: {len(value)} entries")
-        elif isinstance(value, list):
-            print(f"{key}: {len(value)} items")
-
-    print("\nOutlier coords structure:")
-    for img_id, coords in img_json["outlier_coords"].items():
-        print(f"{img_id}: {len(coords)} outlier pixels")
-        if coords:  # Only print example if there are outliers
-            print(f"Example coordinate format: {coords[0]}")
-
-    # img_json = impute_invalid_pixels(img_json)
-    # # img_json = interpolate_invalid_pixels(img_json)
-    # img_json = detect_image_level_outliers(img_json)
-    # img_json = remove_image_outliers(img_json)
-
-    # print("\nFinal img_json:")
+    # img_json = detect_missing_data(img_json)
+    # print("\nAfter detect_missing_data:")
     # print(json.dumps(img_json, indent=4))
 
+    # img_json = detect_pixel_level_outliers(img_json)
+    # print("\nAfter detect_outlier_pixels:")
+    # for key, value in img_json.items():
+    #     if isinstance(value, dict):
+    #         print(f"{key}: {len(value)} entries")
+    #     elif isinstance(value, list):
+    #         print(f"{key}: {len(value)} items")
+
+    # print("\nOutlier coords structure:")
+    # for img_id, coords in img_json["outlier_coords"].items():
+    #     print(f"{img_id}: {len(coords)} outlier pixels")
+    #     if coords:  # Only print example if there are outliers
+    #         print(f"Example coordinate format: {coords[0]}")
+
+    # # img_json = impute_invalid_pixels(img_json)
+    # img_json = interpolate_invalid_pixels(img_json)
+
+    img_json = detect_image_level_outliers(img_json)
+    img_json = remove_image_outliers(img_json)
+
+    print("\nAfter remove_image_outliers:")
+    print(json.dumps(img_json, indent=4))
+
     # img_json = detect_noise(img_json)
-    # print("\nFinal img_json:")
+    # print("\nAfter detect_noise:")
     # print(json.dumps(img_json, indent=4))
 
     # img_json = denoise_non_local_means(img_json)
@@ -71,6 +78,21 @@ def main():
             "hue",
         ],
     )
+    print("\nAfter transform_images:")
+    print(json.dumps(img_json, indent=4))
+
+    img_json = analyze_class_distribution(img_json)
+    print("\nAfter analyze_class_distribution:")
+    print(json.dumps(img_json, indent=4))
+
+    img_json = evaluate_class_imbalance(img_json)
+    print("\nAfter evaluate_class_imbalance:")
+    print(json.dumps(img_json, indent=4))
+
+    # img_json = oversample_minority_classes(img_json)
+    img_json = smote_oversampling(img_json)
+    print("\nAfter SMOTE oversampling:")
+    print(json.dumps(img_json, indent=4))
 
 
 if __name__ == "__main__":

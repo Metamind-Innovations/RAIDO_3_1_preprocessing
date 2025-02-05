@@ -135,9 +135,7 @@ def transform_images(
 
     # Update labels CSV
     if "label_path" in img_json:
-
         df = pd.read_csv(img_json["label_path"], index_col=False)
-        print(df)
 
         # Create new rows for augmented images
         new_rows = []
