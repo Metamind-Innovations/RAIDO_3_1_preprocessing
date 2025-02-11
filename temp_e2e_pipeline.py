@@ -18,6 +18,7 @@ from src.images.balancing import (
     oversample_minority_classes,
     smote_oversampling,
 )
+from src.images.feature_engineering import resnet_representations, vit_representations
 
 
 def main():
@@ -92,6 +93,13 @@ def main():
     # img_json = oversample_minority_classes(img_json)
     img_json = smote_oversampling(img_json)
     print("\nAfter SMOTE oversampling:")
+    print(json.dumps(img_json, indent=4))
+
+    # img_json = resnet_representations(img_json, model_name='resnet50', normalize=True, calculate_stats=True)
+    img_json = vit_representations(
+        img_json, model_name="vit_b_32", normalize=True, calculate_stats=True
+    )
+    print("\nAfter resnet_representations:")
     print(json.dumps(img_json, indent=4))
 
 
