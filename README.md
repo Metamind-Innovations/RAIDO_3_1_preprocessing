@@ -69,3 +69,7 @@ Then, run the test file:
 ```bash
 python3 test_multi_file_endpoints.py
 ```
+
+## 📜 License & Usage
+
+All rights reserved by MetaMinds Innovations.
